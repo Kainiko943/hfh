@@ -1,0 +1,364 @@
+//@version=6
+indicator("Final Boss • Struct+ATR (No HTF)", shorttitle="FB S+ATR", overlay=true, max_labels_count=500, max_lines_count=500)
+
+//──────────────────────────────────────────────────────────────────────────────
+// Inputs
+//──────────────────────────────────────────────────────────────────────────────
+groupCore   = "Core"
+showSignals = input.bool(defval=true,  title="Show Signals", group=groupCore)
+showRisk    = input.bool(defval=true,  title="Show SL/TP", group=groupCore)
+showBG      = input.bool(defval=true,  title="Soft BG", group=groupCore)
+
+groupTrend  = "Trend"
+emaFastLen  = input.int(defval=21, title="EMA Fast", minval=1, group=groupTrend)
+emaSlowLen  = input.int(defval=55, title="EMA Slow", minval=1, group=groupTrend)
+showEMAs    = input.bool(defval=true, title="Show EMAs", group=groupTrend)
+
+groupStruct = "Structure"
+pivotLen    = input.int(defval=5, title="Pivot Length", minval=1, group=groupStruct)
+bosLen      = input.int(defval=2, title="BOS Micro Pivot Len", minval=1, maxval=10, group=groupStruct)
+useSweep    = input.bool(defval=true, title="Require Sweep+Reclaim", group=groupStruct)
+useBOS      = input.bool(defval=true, title="Require BOS", group=groupStruct)
+armBars     = input.int(defval=8, title="Armed Valid (bars)", minval=1, maxval=100, group=groupStruct)
+entryMode   = input.string(defval="BOS+Retest", title="Entry Mode", options=["BOS+Retest","Instant BOS"], group=groupStruct)
+retestWindow= input.int(defval=10, title="Retest Window (bars)", minval=1, maxval=100, group=groupStruct)
+retestSlack = input.float(defval=0.25, title="Retest Slack (ATR)", minval=0.0, step=0.05, group=groupStruct)
+
+groupFilters = "Filters"
+useADX     = input.bool(defval=true, title="Use ADX", group=groupFilters)
+adxLen     = input.int(defval=14, title="ADX Length", minval=1, group=groupFilters)
+adxThresh  = input.float(defval=18.0, title="ADX Threshold", minval=1, step=0.5, group=groupFilters)
+
+rsiLen     = input.int(defval=14, title="RSI Length", minval=1, group=groupFilters)
+rsiBull    = input.float(defval=55, title="RSI Bull", minval=1, maxval=99, group=groupFilters)
+rsiBear    = input.float(defval=45, title="RSI Bear", minval=1, maxval=99, group=groupFilters)
+
+useVolFilter = input.bool(defval=true, title="Require Volume Confirm", group=groupFilters)
+volLen       = input.int(defval=20, title="Volume SMA Len", minval=1, group=groupFilters)
+volMult      = input.float(defval=1.2, title="Volume Mult", minval=0.1, step=0.1, group=groupFilters)
+
+useChop    = input.bool(defval=true, title="Anti-Chop (BB width + EMA slope)", group=groupFilters)
+bbLen      = input.int(defval=20, title="BB Length", minval=1, group=groupFilters)
+bbMult     = input.float(defval=2.0, title="BB Mult", minval=0.1, step=0.1, group=groupFilters)
+bbMinPct   = input.float(defval=1.2, title="Min BB Width %", minval=0.1, step=0.1, group=groupFilters)
+slopeLen   = input.int(defval=10, title="EMA Slow Slope Lookback", minval=1, group=groupFilters)
+slopeMinPct= input.float(defval=0.15, title="Min EMA Slope %", minval=0.01, step=0.01, group=groupFilters)
+
+groupScore = "Score"
+useScore   = input.bool(defval=true, title="Enable Score Filter", group=groupScore)
+minScore   = input.int(defval=70, title="Min Score", minval=1, maxval=100, group=groupScore)
+showGrade  = input.bool(defval=true, title="Show Grade", group=groupScore)
+wTrend     = input.float(defval=2.0, title="W: Trend",  minval=0.0, step=0.25, group=groupScore)
+wADX       = input.float(defval=1.0, title="W: ADX",    minval=0.0, step=0.25, group=groupScore)
+wRSI       = input.float(defval=1.0, title="W: RSI",    minval=0.0, step=0.25, group=groupScore)
+wVol       = input.float(defval=0.9, title="W: Volume", minval=0.0, step=0.25, group=groupScore)
+wChop      = input.float(defval=0.8, title="W: ChopOK", minval=0.0, step=0.25, group=groupScore)
+
+groupRisk = "Risk (Struct+ATR)"
+atrLen       = input.int(defval=14, title="ATR Length", minval=1, group=groupRisk)
+atrBufferMult= input.float(defval=0.40, title="ATR Buffer", minval=0.0, step=0.05, group=groupRisk)
+maxStopAtr   = input.float(defval=4.0, title="Max Stop (ATR)", minval=0.5, step=0.25, group=groupRisk)
+tp1RR        = input.float(defval=1.2, title="TP1 (R)", minval=0.1, step=0.1, group=groupRisk)
+tp2RR        = input.float(defval=2.5, title="TP2 (R)", minval=0.1, step=0.1, group=groupRisk)
+trailAfterTP1= input.bool(defval=true, title="Trail After TP1", group=groupRisk)
+feesPct      = input.float(defval=0.10, title="BE+Fees (%)", minval=0.0, step=0.01, group=groupRisk)
+trailAtrMult = input.float(defval=1.2, title="Trail ATR Mult", minval=0.1, step=0.1, group=groupRisk)
+extendBars   = input.int(defval=200, title="Extend Lines (bars)", minval=10, maxval=2000, group=groupRisk)
+markHits     = input.bool(defval=true, title="Mark SL/TP Hits", group=groupRisk)
+
+//──────────────────────────────────────────────────────────────────────────────
+// Helpers
+//──────────────────────────────────────────────────────────────────────────────
+f_norm(float v, float lo, float hi) =>
+    float denom = math.max(hi - lo, 1e-10)
+    float x = (v - lo) / denom
+    math.max(0.0, math.min(1.0, x))
+
+f_grade(float s, int minS) =>
+    s >= (minS + 10) ? "A+" :
+     s >= minS       ? "A"  :
+      s >= (minS - 10) ? "B" : "C"
+
+f_makeLineSolid(int ext, float y, color col, int w) =>
+    line.new(bar_index, y, bar_index + ext, y, extend=extend.none, color=col, style=line.style_solid, width=w)
+
+f_makeLineDashed(int ext, float y, color col, int w) =>
+    line.new(bar_index, y, bar_index + ext, y, extend=extend.none, color=col, style=line.style_dashed, width=w)
+
+f_setLineY(line ln, int ext, float y) =>
+    if not na(ln)
+        line.set_x1(ln, bar_index)
+        line.set_y1(ln, y)
+        line.set_x2(ln, bar_index + ext)
+        line.set_y2(ln, y)
+
+f_clampStop(float entry, float stop, float maxDist) =>
+    float dist = math.abs(entry - stop)
+    dist <= maxDist ? stop : (stop < entry ? entry - maxDist : entry + maxDist)
+
+//──────────────────────────────────────────────────────────────────────────────
+// Core series
+//──────────────────────────────────────────────────────────────────────────────
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+atr     = ta.atr(atrLen)
+rsi     = ta.rsi(close, rsiLen)
+
+[_, _, adx] = ta.dmi(adxLen, adxLen)
+
+volSMA  = ta.sma(volume, volLen)
+volOK   = (not useVolFilter) or (volume > volSMA * volMult)
+
+trendUp   = emaFast > emaSlow
+trendDown = emaFast < emaSlow
+
+strengthOK = (not useADX) or (adx >= adxThresh)
+momBull    = rsi >= rsiBull
+momBear    = rsi <= rsiBear
+
+// Anti-chop
+bbBasis = ta.sma(close, bbLen)
+bbDev   = bbMult * ta.stdev(close, bbLen)
+bbUpper = bbBasis + bbDev
+bbLower = bbBasis - bbDev
+bbWidthPct  = bbBasis != 0.0 ? ((bbUpper - bbLower) / bbBasis) * 100.0 : 0.0
+emaSlopePct = close != 0.0 ? (math.abs(emaSlow - emaSlow[slopeLen]) / close) * 100.0 : 0.0
+chopOK = true
+if useChop
+    chopOK := (bbWidthPct >= bbMinPct) and (emaSlopePct >= slopeMinPct)
+
+// Score (simple + stable)
+trendC = trendUp ? 1.0 : trendDown ? 0.0 : 0.5
+adxC   = useADX ? f_norm(adx, adxThresh, adxThresh + 25.0) : 1.0
+rsiBullC = f_norm(rsi, 50.0, 70.0)
+rsiBearC = f_norm(50.0 - rsi, 0.0, 20.0)
+volC   = useVolFilter ? f_norm(volume / math.max(volSMA, 1e-10), 1.0, volMult + 0.8) : 1.0
+chopC  = chopOK ? 1.0 : 0.0
+
+wSum = math.max(wTrend + wADX + wRSI + wVol + wChop, 1e-10)
+scoreBull = 100.0 * (wTrend*trendC + wADX*adxC + wRSI*rsiBullC + wVol*volC + wChop*chopC) / wSum
+scoreBear = 100.0 * (wTrend*(1.0 - trendC) + wADX*adxC + wRSI*rsiBearC + wVol*volC + wChop*chopC) / wSum
+
+scoreOKBull = (not useScore) or (scoreBull >= minScore)
+scoreOKBear = (not useScore) or (scoreBear >= minScore)
+
+//──────────────────────────────────────────────────────────────────────────────
+// Structure pivots + sweeps
+//──────────────────────────────────────────────────────────────────────────────
+pL = ta.pivotlow(low, pivotLen, pivotLen)
+pH = ta.pivothigh(high, pivotLen, pivotLen)
+
+var float lastSwingLow  = na
+var float lastSwingHigh = na
+
+if not na(pL)
+    lastSwingLow := pL
+if not na(pH)
+    lastSwingHigh := pH
+
+bullSweep = (not na(lastSwingLow)) and (low < lastSwingLow) and (close > lastSwingLow)
+bearSweep = (not na(lastSwingHigh)) and (high > lastSwingHigh) and (close < lastSwingHigh)
+
+liqOKBull = (not useSweep) or bullSweep
+liqOKBear = (not useSweep) or bearSweep
+
+// BOS micro pivots
+mL = ta.pivotlow(low, bosLen, bosLen)
+mH = ta.pivothigh(high, bosLen, bosLen)
+
+var float microLow  = na
+var float microHigh = na
+if not na(mL)
+    microLow := mL
+if not na(mH)
+    microHigh := mH
+
+bosUpEvent   = (not na(microHigh)) and (close > microHigh)
+bosDownEvent = (not na(microLow))  and (close < microLow)
+
+//──────────────────────────────────────────────────────────────────────────────
+// Final Boss: Arm → BOS → Retest
+//──────────────────────────────────────────────────────────────────────────────
+filtersBull = trendUp and strengthOK and momBull and volOK and chopOK and scoreOKBull and liqOKBull
+filtersBear = trendDown and strengthOK and momBear and volOK and chopOK and scoreOKBear and liqOKBear
+
+var int armedDir = 0
+var int armedUntil = na
+
+armLong  = filtersBull and not filtersBull[1]
+armShort = filtersBear and not filtersBear[1]
+
+if useBOS
+    if armLong
+        armedDir := 1
+        armedUntil := bar_index + armBars
+    if armShort
+        armedDir := -1
+        armedUntil := bar_index + armBars
+    if armedDir != 0 and bar_index > armedUntil
+        armedDir := 0
+        armedUntil := na
+else
+    armedDir := 0
+    armedUntil := na
+
+var float bosLevel = na
+var int   bosDir   = 0
+var int   bosUntil = na
+
+if useBOS and armedDir != 0
+    if armedDir == 1 and bosUpEvent
+        bosDir := 1
+        bosLevel := microHigh
+        bosUntil := bar_index + retestWindow
+    if armedDir == -1 and bosDownEvent
+        bosDir := -1
+        bosLevel := microLow
+        bosUntil := bar_index + retestWindow
+
+if bosDir != 0 and bar_index > bosUntil
+    bosDir := 0
+    bosLevel := na
+    bosUntil := na
+    armedDir := 0
+    armedUntil := na
+
+float slack = atr * retestSlack
+retestLong  = (bosDir == 1)  and (not na(bosLevel)) and (low <= (bosLevel + slack))  and (close > bosLevel)
+retestShort = (bosDir == -1) and (not na(bosLevel)) and (high >= (bosLevel - slack)) and (close < bosLevel)
+
+entryLong  = useBOS ? (entryMode == "Instant BOS" ? ((armedDir == 1) and bosUpEvent) : retestLong)  : armLong
+entryShort = useBOS ? (entryMode == "Instant BOS" ? ((armedDir == -1) and bosDownEvent) : retestShort) : armShort
+
+if useBOS and (entryLong or entryShort)
+    armedDir := 0
+    armedUntil := na
+    bosDir := 0
+    bosLevel := na
+    bosUntil := na
+
+//──────────────────────────────────────────────────────────────────────────────
+// Visuals (no local-scope bgcolor)
+//──────────────────────────────────────────────────────────────────────────────
+color bgCol = na
+if showBG
+    bgCol := trendUp ? color.new(color.lime, 92) : trendDown ? color.new(color.red, 92) : color.new(color.gray, 94)
+bgcolor(bgCol)
+
+plot(showEMAs ? emaFast : na, title="EMA Fast", color=color.new(color.white, 0), linewidth=2)
+plot(showEMAs ? emaSlow : na, title="EMA Slow", color=color.new(color.white, 60), linewidth=2)
+plot(useBOS and bosDir != 0 ? bosLevel : na, title="BOS Level", color=color.new(color.aqua, 70), linewidth=1)
+
+string buyTxt  = showGrade ? ("BUY "  + f_grade(scoreBull, minScore)) : "BUY"
+string sellTxt = showGrade ? ("SELL " + f_grade(scoreBear, minScore)) : "SELL"
+
+plotshape(showSignals and useBOS and (armedDir == 1), title="ARM L", style=shape.circle, text="ARM",
+     location=location.belowbar, color=color.new(color.lime, 60), textcolor=color.black, size=size.tiny)
+plotshape(showSignals and useBOS and (armedDir == -1), title="ARM S", style=shape.circle, text="ARM",
+     location=location.abovebar, color=color.new(color.red, 60), textcolor=color.white, size=size.tiny)
+
+plotshape(showSignals and bullSweep, title="SWP L", style=shape.triangleup, text="SWP",
+     location=location.belowbar, color=color.new(color.lime, 70), textcolor=color.black, size=size.tiny)
+plotshape(showSignals and bearSweep, title="SWP S", style=shape.triangledown, text="SWP",
+     location=location.abovebar, color=color.new(color.red, 70), textcolor=color.white, size=size.tiny)
+
+plotshape(showSignals and entryLong, title="BUY", style=shape.labelup, text=buyTxt,
+     location=location.belowbar, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+plotshape(showSignals and entryShort, title="SELL", style=shape.labeldown, text=sellTxt,
+     location=location.abovebar, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny)
+
+//──────────────────────────────────────────────────────────────────────────────
+// Risk Engine (Structure + ATR; TP1->BE+fees->trail)
+//──────────────────────────────────────────────────────────────────────────────
+var line slLine  = na
+var line tp1Line = na
+var line tp2Line = na
+
+var float entryPrice = na
+var float slInit = na
+var float tp1Price = na
+var float tp2Price = na
+var float trailStop = na
+var int   posDir = 0
+var bool  activeIdea = false
+var bool  tp1Reached = false
+
+f_clearRisk() =>
+    if not na(slLine)
+        line.delete(slLine)
+    if not na(tp1Line)
+        line.delete(tp1Line)
+    if not na(tp2Line)
+        line.delete(tp2Line)
+
+f_structStop(int dir) =>
+    float buf = atr * atrBufferMult
+    dir == 1 ? (na(lastSwingLow)  ? (close - atr * 2.0) : (lastSwingLow  - buf))
+             : (na(lastSwingHigh) ? (close + atr * 2.0) : (lastSwingHigh + buf))
+
+f_newIdea(int dir) =>
+    f_clearRisk()
+    posDir := dir
+    entryPrice := close
+    tp1Reached := false
+    activeIdea := true
+
+    float maxDist = atr * maxStopAtr
+    float sStop = f_structStop(posDir)
+    slInit := f_clampStop(entryPrice, sStop, maxDist)
+    trailStop := slInit
+
+    float R = math.abs(entryPrice - slInit)
+    tp1Price := posDir == 1 ? (entryPrice + R * tp1RR) : (entryPrice - R * tp1RR)
+    tp2Price := posDir == 1 ? (entryPrice + R * tp2RR) : (entryPrice - R * tp2RR)
+
+    if showRisk
+        slLine  := f_makeLineSolid(extendBars, trailStop, color.new(color.red, 0), 2)
+        tp1Line := f_makeLineDashed(extendBars, tp1Price,  color.new(color.lime, 0), 2)
+        tp2Line := f_makeLineDashed(extendBars, tp2Price,  color.new(color.green, 0), 2)
+
+if entryLong
+    f_newIdea(1)
+if entryShort
+    f_newIdea(-1)
+
+bool slHit = false
+bool tp1Hit = false
+bool tp2Hit = false
+
+if activeIdea and showRisk
+    slHit := posDir == 1 ? (low <= trailStop) : (high >= trailStop)
+    tp1Hit := posDir == 1 ? (high >= tp1Price) : (low <= tp1Price)
+    tp2Hit := posDir == 1 ? (high >= tp2Price) : (low <= tp2Price)
+
+    if tp1Hit
+        tp1Reached := true
+
+    if trailAfterTP1 and tp1Reached
+        float be = posDir == 1 ? (entryPrice * (1.0 + feesPct / 100.0)) : (entryPrice * (1.0 - feesPct / 100.0))
+        trailStop := posDir == 1 ? math.max(trailStop, be) : math.min(trailStop, be)
+
+        float atrTrail = posDir == 1 ? (close - atr * trailAtrMult) : (close + atr * trailAtrMult)
+        float structTrail = f_structStop(posDir)
+        structTrail := f_clampStop(entryPrice, structTrail, atr * maxStopAtr)
+
+        trailStop := posDir == 1 ? math.max(trailStop, math.max(atrTrail, structTrail))
+                                 : math.min(trailStop, math.min(atrTrail, structTrail))
+
+    f_setLineY(slLine, extendBars, trailStop)
+
+    if markHits and tp1Hit and not tp2Hit
+        label.new(bar_index, tp1Price, "TP1", style=label.style_label_up, textcolor=color.black, color=color.new(color.lime, 30))
+    if markHits and slHit
+        label.new(bar_index, trailStop, tp1Reached ? "TRAIL SL" : "SL", style=label.style_label_down, textcolor=color.white, color=color.new(color.red, 0))
+        activeIdea := false
+    if markHits and tp2Hit
+        label.new(bar_index, tp2Price, "TP2", style=label.style_label_up, textcolor=color.black, color=color.new(color.lime, 0))
+        activeIdea := false
+
+// Alerts (titles must be const strings)
+alertcondition(entryLong,  title="BUY",  message="BUY: Final Boss Struct+ATR")
+alertcondition(entryShort, title="SELL", message="SELL: Final Boss Struct+ATR")
+alertcondition(tp1Hit, title="TP1 HIT", message="TP1 touched")
+alertcondition(tp2Hit, title="TP2 HIT", message="TP2 touched")
+alertcondition(slHit,  title="SL HIT",  message="SL/Trail touched")
