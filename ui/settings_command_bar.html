@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Northstar Terminal — Settings Prompt</title>
+    <style>
+      body { background: #0f1116; color: #e6e8ee; font-family: Inter, Arial, sans-serif; margin: 24px; }
+      .panel { border: 1px solid #2a2f3a; border-radius: 10px; padding: 16px; max-width: 960px; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      input { flex: 1; background: #151924; color: #e6e8ee; border: 1px solid #343a47; border-radius: 8px; padding: 10px; }
+      button { background: #2b6ef3; color: #fff; border: 0; border-radius: 8px; padding: 10px 14px; }
+      .muted { color: #9aa4b2; font-size: 12px; margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h3>Prompt Settings (Privileged)</h3>
+      <div class="row">
+        <input placeholder="e.g. Switch to OpenRouter and set model to anthropic/claude-3.5-sonnet" />
+        <button>Propose</button>
+      </div>
+      <p class="muted">Two-phase commit required: Propose → Confirm. Secret keys are blocked in this field.</p>
+    </div>
+  </body>
+</html>
