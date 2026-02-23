@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Northstar Terminal — Dashboard</title>
+    <style>
+      :root {
+        --bg: #0a0f1a;
+        --bg-2: #0f1728;
+        --panel: #121c31;
+        --panel-2: #15223b;
+        --border: #2a3a5d;
+        --text: #e5ecff;
+        --muted: #94a7d0;
+        --green: #39d98a;
+        --yellow: #f5c451;
+        --red: #ff6b6b;
+        --blue: #4da3ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        background: radial-gradient(circle at 15% 0%, #1a2c52 0%, var(--bg) 45%);
+        font-family: Inter, Segoe UI, Arial, sans-serif;
+      }
+      .app {
+        max-width: 1360px;
+        margin: 0 auto;
+        padding: 14px;
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 12px;
+      }
+      .topbar {
+        background: rgba(17, 28, 49, 0.96);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 10px 14px;
+        display: grid;
+        grid-template-columns: 220px 1fr 360px;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand { font-size: 22px; font-weight: 700; }
+      .status-strip { display: flex; gap: 8px; flex-wrap: wrap; }
+      .pill {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        background: rgba(21, 34, 59, 0.8);
+      }
+      .ok { color: var(--green); }
+      .warn { color: var(--yellow); }
+      .danger { color: var(--red); }
+      .live { color: #ff8c8c; font-weight: 700; }
+      .search {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #0d1528;
+        color: var(--text);
+        padding: 10px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 220px 1fr 360px;
+        gap: 12px;
+      }
+      .panel {
+        background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .sidebar .nav { display: grid; gap: 8px; }
+      .nav a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--border);
+        background: #101a2d;
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      .nav a.active { border-color: var(--blue); background: #162744; }
+
+      .main {
+        display: grid;
+        gap: 12px;
+      }
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .kpi {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+      }
+      .kpi .label { font-size: 12px; color: var(--muted); }
+      .kpi .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+
+      .agents {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .agent {
+        background: #111d32;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+      }
+      .agent-top { display: flex; justify-content: space-between; font-size: 13px; }
+      .agent-task { font-size: 12px; color: var(--muted); margin-top: 6px; }
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+
+      .right {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+      }
+      .events { max-height: 420px; overflow: auto; display: grid; gap: 8px; }
+      .event {
+        border: 1px solid var(--border);
+        background: #101a2d;
+        border-radius: 10px;
+        padding: 8px;
+        font-size: 12px;
+      }
+      .muted { color: var(--muted); }
+      .footer-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">Northstar Terminal</div>
+        <div class="status-strip">
+          <span class="pill ok">Market Data: CONNECTED</span>
+          <span class="pill ok">Risk: SAFE</span>
+          <span class="pill warn">Notifications: DEGRADED</span>
+          <span class="pill">Execution: <span class="live">PAPER</span></span>
+        </div>
+        <input class="search" placeholder="Search symbols, agents, events..." />
+      </header>
+
+      <section class="layout">
+        <aside class="sidebar panel">
+          <div class="nav">
+            <a class="active" href="index.html">Dashboard</a>
+            <a href="ui/settings_command_bar.html">Prompt Settings</a>
+            <a href="markets.html">Markets</a>
+            <a href="#">Mission Control</a>
+            <a href="#">Alerts</a>
+            <a href="#">Settings</a>
+          </div>
+          <p class="footer-note">Dense layout for quick monitoring and minimal whitespace.</p>
+        </aside>
+
+        <main class="main">
+          <div class="kpis">
+            <article class="kpi"><div class="label">Active Agents</div><div class="value">6</div></article>
+            <article class="kpi"><div class="label">Events / min</div><div class="value">118</div></article>
+            <article class="kpi"><div class="label">Connected Feeds</div><div class="value">4/4</div></article>
+            <article class="kpi"><div class="label">Queue Depth</div><div class="value">12</div></article>
+          </div>
+
+          <section class="panel">
+            <h3 style="margin:0 0 10px;">Agent Grid</h3>
+            <div class="agents">
+              <article class="agent"><div class="agent-top"><strong>SigmaX</strong><span><span class="dot" style="background:var(--green)"></span>RUNNING</span></div><div class="agent-task">Orchestrating signal cycle · queue 3</div></article>
+              <article class="agent"><div class="agent-top"><strong>Hermes</strong><span><span class="dot" style="background:var(--yellow)"></span>WAITING</span></div><div class="agent-task">Execution router gated (paper mode)</div></article>
+              <article class="agent"><div class="agent-top"><strong>Chronos</strong><span><span class="dot" style="background:var(--green)"></span>RUNNING</span></div><div class="agent-task">Risk checks + drawdown guard monitoring</div></article>
+              <article class="agent"><div class="agent-top"><strong>Orion</strong><span><span class="dot" style="background:var(--green)"></span>RUNNING</span></div><div class="agent-task">Regime classification update pending publish</div></article>
+              <article class="agent"><div class="agent-top"><strong>Atlas RL</strong><span><span class="dot" style="background:var(--yellow)"></span>DEGRADED</span></div><div class="agent-task">Optional module in stub mode</div></article>
+              <article class="agent"><div class="agent-top"><strong>Vault Orchestrator</strong><span><span class="dot" style="background:var(--green)"></span>IDLE</span></div><div class="agent-task">Lineage version store healthy</div></article>
+            </div>
+          </section>
+        </main>
+
+        <aside class="right">
+          <section class="panel">
+            <h3 style="margin:0 0 8px;">Activity Timeline</h3>
+            <div class="events">
+              <div class="event"><strong>INFO</strong> · SigmaX · TASK_START<br /><span class="muted">Started abstract signal aggregation (cid: a1)</span></div>
+              <div class="event"><strong>WARN</strong> · Hermes · RETRY<br /><span class="muted">Execution endpoint retry queued</span></div>
+              <div class="event"><strong>INFO</strong> · Chronos · HEARTBEAT<br /><span class="muted">Risk checks healthy · latency 84ms</span></div>
+              <div class="event"><strong>INFO</strong> · Orion · TASK_DONE<br /><span class="muted">Regime update posted to mission bus</span></div>
+              <div class="event"><strong>INFO</strong> · System · FEED_CONNECTED<br /><span class="muted">Binance feed stream resumed</span></div>
+            </div>
+          </section>
+          <section class="panel">
+            <h3 style="margin:0 0 8px;">Quick Open</h3>
+            <div class="nav">
+              <a href="ui/settings_command_bar.html">Open Prompt Settings UI</a>
+            </div>
+            <p class="footer-note">Run <code>python3 -m http.server 8080</code> then open <code>http://localhost:8080</code>.</p>
+          </section>
+        </aside>
+      </section>
+    </div>
+  </body>
+</html>
