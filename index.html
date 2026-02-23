@@ -4,214 +4,474 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Northstar Terminal — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg: #0a0f1a;
-        --bg-2: #0f1728;
-        --panel: #121c31;
-        --panel-2: #15223b;
-        --border: #2a3a5d;
-        --text: #e5ecff;
-        --muted: #94a7d0;
-        --green: #39d98a;
-        --yellow: #f5c451;
-        --red: #ff6b6b;
-        --blue: #4da3ff;
+        --bg: #05070d;
+        --panel: #0b111c;
+        --panel-2: #0f1626;
+        --border: rgba(255, 255, 255, 0.06);
+        --text: rgba(255, 255, 255, 0.92);
+        --text-secondary: rgba(255, 255, 255, 0.62);
+        --text-muted: rgba(255, 255, 255, 0.42);
+        --green: #00ff6a;
+        --red: #ff3b3b;
+        --amber: #ffc400;
+        --blue: #00a3ff;
+        --radius-card: 14px;
+        --radius-control: 12px;
       }
+
       * { box-sizing: border-box; }
       body {
         margin: 0;
+        min-height: 100vh;
         color: var(--text);
-        background: radial-gradient(circle at 15% 0%, #1a2c52 0%, var(--bg) 45%);
-        font-family: Inter, Segoe UI, Arial, sans-serif;
+        background: radial-gradient(circle at 50% 0%, rgba(0, 163, 255, 0.10), transparent 55%), var(--bg);
+        font-family: Inter, system-ui, sans-serif;
       }
+      .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-variant-numeric: tabular-nums; }
       .app {
-        max-width: 1360px;
-        margin: 0 auto;
-        padding: 14px;
         min-height: 100vh;
         display: grid;
-        grid-template-rows: auto 1fr;
-        gap: 12px;
+        grid-template-columns: 260px 1fr;
       }
-      .topbar {
-        background: rgba(17, 28, 49, 0.96);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 10px 14px;
-        display: grid;
-        grid-template-columns: 220px 1fr 360px;
-        align-items: center;
-        gap: 12px;
+      .sidebar {
+        border-right: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0));
+        padding: 20px 14px;
       }
-      .brand { font-size: 22px; font-weight: 700; }
-      .status-strip { display: flex; gap: 8px; flex-wrap: wrap; }
-      .pill {
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 12px;
-        background: rgba(21, 34, 59, 0.8);
-      }
-      .ok { color: var(--green); }
-      .warn { color: var(--yellow); }
-      .danger { color: var(--red); }
-      .live { color: #ff8c8c; font-weight: 700; }
-      .search {
-        width: 100%;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: #0d1528;
-        color: var(--text);
-        padding: 10px;
-      }
-
-      .layout {
-        display: grid;
-        grid-template-columns: 220px 1fr 360px;
-        gap: 12px;
-      }
-      .panel {
-        background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 12px;
-      }
-      .sidebar .nav { display: grid; gap: 8px; }
+      .brand { padding: 8px 10px 18px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+      .brand h1 { margin: 0; font-size: 35px; letter-spacing: .6px; }
+      .brand p { margin: 5px 0 0; color: var(--text-secondary); font-size: 14px; }
+      .nav { display: grid; gap: 7px; }
       .nav a {
         color: var(--text);
         text-decoration: none;
-        border: 1px solid var(--border);
-        background: #101a2d;
-        padding: 10px;
-        border-radius: 10px;
-        font-size: 14px;
+        border: 1px solid transparent;
+        background: rgba(255,255,255,0.01);
+        border-radius: var(--radius-control);
+        padding: 12px 14px;
+        font-size: 27px;
       }
-      .nav a.active { border-color: var(--blue); background: #162744; }
+      .nav a.active { background: rgba(255,255,255,0.035); border-color: var(--border); box-shadow: inset 0 0 0 1px rgba(0,163,255,0.14); }
 
-      .main {
+      .content { display: grid; grid-template-rows: auto auto 1fr; }
+      .command {
         display: grid;
+        grid-template-columns: 1fr auto auto 380px;
+        gap: 10px;
+        align-items: center;
+        padding: 11px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .title { font-size: 39px; font-weight: 600; }
+      .command-pill {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 23px;
+        color: var(--text-secondary);
+        background: rgba(255,255,255,0.01);
+      }
+      .command-pill b { color: var(--green); font-weight: 600; margin-left: 5px; }
+      .search {
+        border: 1px solid var(--border);
+        background: #090e1a;
+        color: var(--text);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 22px;
+      }
+
+      .ticker {
+        border-bottom: 1px solid var(--border);
+        overflow: hidden;
+        white-space: nowrap;
+        position: relative;
+      }
+      .ticker-track {
+        display: inline-flex;
+        gap: 24px;
+        padding: 10px 0;
+        animation: marquee 36s linear infinite;
+      }
+      .ticker:hover .ticker-track { animation-play-state: paused; }
+      .tick {
+        border: 1px solid transparent;
+        border-radius: 9px;
+        padding: 4px 8px;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+      }
+      .tick.active, .tick:hover { border-color: var(--border); background: rgba(255,255,255,0.03); }
+      .pct-pos { color: var(--green); }
+      .pct-neg { color: var(--red); }
+
+      @keyframes marquee {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+      }
+
+      .dashboard {
+        padding: 12px 14px 14px;
+        display: grid;
+        grid-template-columns: minmax(640px, 1fr) 390px;
+        grid-template-areas:
+          "overview health"
+          "mid preview"
+          "log preview";
         gap: 12px;
       }
-      .kpis {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px;
-      }
-      .kpi {
-        background: var(--panel-2);
+      .card {
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
         border: 1px solid var(--border);
-        border-radius: 12px;
+        border-radius: var(--radius-card);
         padding: 12px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 28px rgba(0,163,255,0.04);
       }
-      .kpi .label { font-size: 12px; color: var(--muted); }
-      .kpi .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+      .card h3 { margin: 0 0 10px; font-size: 36px; letter-spacing: .4px; }
+      .overview { grid-area: overview; }
+      .health { grid-area: health; }
+      .mid-grid { grid-area: mid; display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; }
+      .event-log { grid-area: log; }
+      .preview { grid-area: preview; align-self: start; }
 
-      .agents {
+      .overview-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; min-height: 260px; }
+      .subpanel { border: 1px solid var(--border); border-radius: 11px; background: rgba(0,0,0,0.2); padding: 10px; }
+      .asset-title { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+      .candles { height: 160px; display: flex; align-items: end; gap: 4px; }
+      .candle { width: 7px; border-radius: 2px; background: var(--green); opacity: .9; }
+      .heatmap-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; height: 160px; }
+      .heatbox { border-radius: 2px; }
+      .donut-wrap { display: grid; place-items: center; height: 160px; }
+      .donut {
+        width: 145px;
+        height: 145px;
+        border-radius: 999px;
+        background: conic-gradient(var(--green) 0 42%, #2e3547 42% 67%, var(--red) 67% 100%);
+        position: relative;
+        border: 1px solid var(--border);
+      }
+      .donut::after {
+        content: "";
+        position: absolute;
+        inset: 28px;
+        border-radius: inherit;
+        background: var(--panel);
+        border: 1px solid var(--border);
+      }
+      .donut-label { position: absolute; text-align: center; font-size: 11px; color: var(--text-secondary); }
+      .stats-row { margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .stat { border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.01); padding: 8px; }
+      .stat .k { font-size: 11px; color: var(--text-muted); }
+      .stat .v { margin-top: 4px; color: var(--text); }
+
+      .health-row {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
         gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
       }
-      .agent {
-        background: #111d32;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 10px;
-      }
-      .agent-top { display: flex; justify-content: space-between; font-size: 13px; }
-      .agent-task { font-size: 12px; color: var(--muted); margin-top: 6px; }
-      .dot {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 6px;
-      }
+      .led { width: 8px; height: 8px; border-radius: 999px; box-shadow: 0 0 10px currentColor; }
+      .val { color: var(--text-secondary); }
 
-      .right {
-        display: grid;
-        gap: 12px;
-        align-content: start;
+      .mini-heatmap { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; margin-top: 10px; }
+      .mini-cell { height: 11px; border-radius: 1px; }
+      .label-row { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-top: 8px; }
+
+      .bars { margin-top: 12px; display: grid; gap: 10px; }
+      .bar { height: 11px; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; background: rgba(255,255,255,0.03); }
+      .fill-active { height: 100%; width: 72%; background: linear-gradient(90deg, rgba(0,255,106,.5), var(--green)); }
+      .fill-idle { height: 100%; width: 43%; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,.25)); }
+
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+      th { color: var(--text-muted); font-weight: 500; }
+      tbody tr:hover { background: rgba(255,255,255,0.03); }
+      .badge { border: 1px solid currentColor; border-radius: 999px; padding: 2px 8px; font-size: 10px; letter-spacing: .4px; }
+      .flash { animation: flash 220ms ease; }
+      @keyframes flash { from { background: rgba(0,163,255,.22); } to { background: transparent; } }
+
+      .preview-head { display: flex; justify-content: space-between; align-items: center; }
+      .preview-head a { color: var(--text-secondary); text-decoration: none; font-size: 12px; }
+
+      @media (max-width: 1200px) {
+        .app { grid-template-columns: 1fr; }
+        .sidebar { border-right: 0; border-bottom: 1px solid var(--border); }
+        .dashboard { grid-template-columns: 1fr; grid-template-areas: "overview" "health" "mid" "preview" "log"; }
       }
-      .events { max-height: 420px; overflow: auto; display: grid; gap: 8px; }
-      .event {
-        border: 1px solid var(--border);
-        background: #101a2d;
-        border-radius: 10px;
-        padding: 8px;
-        font-size: 12px;
-      }
-      .muted { color: var(--muted); }
-      .footer-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
     </style>
   </head>
   <body>
     <div class="app">
-      <header class="topbar">
-        <div class="brand">Northstar Terminal</div>
-        <div class="status-strip">
-          <span class="pill ok">Market Data: CONNECTED</span>
-          <span class="pill ok">Risk: SAFE</span>
-          <span class="pill warn">Notifications: DEGRADED</span>
-          <span class="pill">Execution: <span class="live">PAPER</span></span>
+      <aside class="sidebar">
+        <div class="brand">
+          <h1>Northstar Terminal</h1>
+          <p>SIGMA Command Center</p>
         </div>
-        <input class="search" placeholder="Search symbols, agents, events..." />
-      </header>
+        <nav class="nav">
+          <a class="active" href="#">Dashboard</a>
+          <a href="#">Dashboard</a>
+          <a href="#">Markets</a>
+          <a href="#">Mission Control</a>
+          <a href="#">Alerts</a>
+          <a href="ui/settings_command_bar.html">Settings</a>
+        </nav>
+      </aside>
 
-      <section class="layout">
-        <aside class="sidebar panel">
-          <div class="nav">
-            <a class="active" href="index.html">Dashboard</a>
-            <a href="ui/settings_command_bar.html">Prompt Settings</a>
-            <a href="#">Markets</a>
-            <a href="#">Mission Control</a>
-            <a href="#">Alerts</a>
-            <a href="#">Settings</a>
-          </div>
-          <p class="footer-note">Dense layout for quick monitoring and minimal whitespace.</p>
-        </aside>
+      <section class="content">
+        <header class="command">
+          <div class="title">Dashboard</div>
+          <span class="command-pill">Market <b>CONNECTED</b></span>
+          <span class="command-pill">Risk <b>SAFE</b></span>
+          <input class="search" placeholder="Search symbols, agents, events…" />
+        </header>
 
-        <main class="main">
-          <div class="kpis">
-            <article class="kpi"><div class="label">Active Agents</div><div class="value">6</div></article>
-            <article class="kpi"><div class="label">Events / min</div><div class="value">118</div></article>
-            <article class="kpi"><div class="label">Connected Feeds</div><div class="value">4/4</div></article>
-            <article class="kpi"><div class="label">Queue Depth</div><div class="value">12</div></article>
-          </div>
+        <div class="ticker mono" id="ticker">
+          <div class="ticker-track" id="ticker-track"></div>
+        </div>
 
-          <section class="panel">
-            <h3 style="margin:0 0 10px;">Agent Grid</h3>
-            <div class="agents">
-              <article class="agent"><div class="agent-top"><strong>SigmaX</strong><span><span class="dot" style="background:var(--green)"></span>RUNNING</span></div><div class="agent-task">Orchestrating signal cycle · queue 3</div></article>
-              <article class="agent"><div class="agent-top"><strong>Hermes</strong><span><span class="dot" style="background:var(--yellow)"></span>WAITING</span></div><div class="agent-task">Execution router gated (paper mode)</div></article>
-              <article class="agent"><div class="agent-top"><strong>Chronos</strong><span><span class="dot" style="background:var(--green)"></span>RUNNING</span></div><div class="agent-task">Risk checks + drawdown guard monitoring</div></article>
-              <article class="agent"><div class="agent-top"><strong>Orion</strong><span><span class="dot" style="background:var(--green)"></span>RUNNING</span></div><div class="agent-task">Regime classification update pending publish</div></article>
-              <article class="agent"><div class="agent-top"><strong>Atlas RL</strong><span><span class="dot" style="background:var(--yellow)"></span>DEGRADED</span></div><div class="agent-task">Optional module in stub mode</div></article>
-              <article class="agent"><div class="agent-top"><strong>Vault Orchestrator</strong><span><span class="dot" style="background:var(--green)"></span>IDLE</span></div><div class="agent-task">Lineage version store healthy</div></article>
+        <main class="dashboard">
+          <section class="card overview">
+            <h3>Market Overview <span id="active-symbol" class="mono" style="color:var(--text-secondary); font-size:14px; margin-left:8px;">BTCUSDT</span></h3>
+            <div class="overview-grid">
+              <div class="subpanel">
+                <div class="asset-title mono"><span>Price Path</span><span id="active-price">9862.62</span></div>
+                <div class="candles" id="candles"></div>
+              </div>
+              <div class="subpanel">
+                <div class="asset-title"><span>Sector Heatmap</span><span class="mono">10x10</span></div>
+                <div class="heatmap-grid" id="heatmap"></div>
+              </div>
+              <div class="subpanel">
+                <div class="asset-title"><span>Signal Mix</span><span class="mono">Buy/Neutral/Sell</span></div>
+                <div class="donut-wrap">
+                  <div class="donut"><div class="donut-label mono">BUY<br/>42%</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="stats-row mono">
+              <div class="stat"><div class="k">Spread</div><div class="v" id="spread">1.70 (0.01%)</div></div>
+              <div class="stat"><div class="k">Volume</div><div class="v" id="volume">904M</div></div>
+              <div class="stat"><div class="k">Regime</div><div class="v">Bull</div></div>
+              <div class="stat"><div class="k">Volatility</div><div class="v" id="volatility">1.43</div></div>
             </div>
           </section>
+
+          <section class="card health">
+            <h3>Mission Control Health</h3>
+            <div id="health-rows"></div>
+          </section>
+
+          <div class="mid-grid">
+            <section class="card">
+              <h3>Signal Distribution &amp; Agent Activity</h3>
+              <div class="mini-heatmap" id="mini-heatmap"></div>
+              <div class="label-row mono"><span>Buy</span><span>Neutral</span><span>Sell</span><span>Strong Sell</span></div>
+            </section>
+
+            <section class="card">
+              <h3>Agent Activity</h3>
+              <div class="bars mono">
+                <div>5 Active<div class="bar"><div class="fill-active"></div></div></div>
+                <div>7 Idle<div class="bar"><div class="fill-idle"></div></div></div>
+                <div style="color:var(--text-secondary)">584 Tasks Completed <span style="float:right">93%</span></div>
+              </div>
+            </section>
+          </div>
+
+          <section class="card event-log">
+            <h3>Event Log</h3>
+            <table class="mono">
+              <thead>
+                <tr><th>Timestamp</th><th>Agent</th><th>Severity</th><th>Message</th></tr>
+              </thead>
+              <tbody id="event-body"></tbody>
+            </table>
+          </section>
+
+          <aside class="card preview">
+            <div class="preview-head">
+              <h3 style="margin:0">Event Log</h3>
+              <a href="#">View all logs →</a>
+            </div>
+            <table class="mono">
+              <thead><tr><th>Timestamp</th><th>Agent</th><th>Severity</th><th>Message</th></tr></thead>
+              <tbody id="preview-body"></tbody>
+            </table>
+          </aside>
         </main>
-
-        <aside class="right">
-          <section class="panel">
-            <h3 style="margin:0 0 8px;">Activity Timeline</h3>
-            <div class="events">
-              <div class="event"><strong>INFO</strong> · SigmaX · TASK_START<br /><span class="muted">Started abstract signal aggregation (cid: a1)</span></div>
-              <div class="event"><strong>WARN</strong> · Hermes · RETRY<br /><span class="muted">Execution endpoint retry queued</span></div>
-              <div class="event"><strong>INFO</strong> · Chronos · HEARTBEAT<br /><span class="muted">Risk checks healthy · latency 84ms</span></div>
-              <div class="event"><strong>INFO</strong> · Orion · TASK_DONE<br /><span class="muted">Regime update posted to mission bus</span></div>
-              <div class="event"><strong>INFO</strong> · System · FEED_CONNECTED<br /><span class="muted">Binance feed stream resumed</span></div>
-            </div>
-          </section>
-          <section class="panel">
-            <h3 style="margin:0 0 8px;">Quick Open</h3>
-            <div class="nav">
-              <a href="ui/settings_command_bar.html">Open Prompt Settings UI</a>
-            </div>
-            <p class="footer-note">Run <code>python3 -m http.server 8080</code> then open <code>http://localhost:8080</code>.</p>
-          </section>
-        </aside>
       </section>
     </div>
+
+    <script>
+      const randomBetween = (min, max) => Math.random() * (max - min) + min;
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+      const store = {
+        state: {
+          activeSymbol: 'BTCUSDT',
+          ticker: [
+            { symbol: 'BTCUSDT', price: 9862.62, pct: 1.9 },
+            { symbol: 'ETHUSDT', price: 203.0, pct: -1.3 },
+            { symbol: 'SOLUSDT', price: 9.12, pct: 0.9 },
+            { symbol: 'BNBUSDT', price: 702.0, pct: 1.7 },
+            { symbol: 'ADAUSDT', price: 11.2, pct: 0.8 },
+            { symbol: 'XRPUSDT', price: 0.62, pct: -0.3 },
+            { symbol: 'DOGEUSDT', price: 0.18, pct: 2.1 },
+          ],
+          health: [
+            { name: 'Market Data', value: 'CONNECTED', color: 'var(--green)' },
+            { name: 'Execution', value: 'PAPER', color: 'var(--amber)' },
+            { name: 'Risk Engine', value: 'SAFE', color: 'var(--green)' },
+            { name: 'Webhooks', value: 'DEGRADED', color: 'var(--amber)' },
+            { name: 'Incidents', value: '1 alert', color: 'rgba(255,255,255,.55)' },
+            { name: 'Error Budget', value: '7 hours   43ms', color: 'rgba(255,255,255,.75)' },
+          ],
+          logs: [
+            ['09:41:12', 'Sigmax', 'INFO', 'Published abstract signal update.'],
+            ['09:41:03', 'Chronos', 'ALERT', 'Risk check delayed, retry queued'],
+            ['09:38:55', 'Hermes', 'INFO', 'Minor heartbeat delayed.'],
+            ['09:20:08', 'Vault', 'SAFE', 'Strategy lineage tag updated'],
+            ['09:14:30', 'Orion', 'WARN', 'Regime recenter scheduled'],
+          ],
+        },
+        listeners: new Set(),
+        subscribe(selector, cb) {
+          const node = { selector, cb, prev: selector(this.state) };
+          this.listeners.add(node);
+          cb(node.prev);
+          return () => this.listeners.delete(node);
+        },
+        set(patch) {
+          this.state = { ...this.state, ...patch };
+          this.listeners.forEach((l) => {
+            const next = l.selector(this.state);
+            if (JSON.stringify(next) !== JSON.stringify(l.prev)) {
+              l.prev = next;
+              l.cb(next);
+            }
+          });
+        },
+      };
+
+      const tickerTrack = document.getElementById('ticker-track');
+      const activeSymbolNode = document.getElementById('active-symbol');
+      const activePriceNode = document.getElementById('active-price');
+
+      const severityColor = { INFO: 'var(--blue)', WARN: 'var(--amber)', ALERT: 'var(--red)', SAFE: 'var(--green)' };
+
+      function renderTicker(items) {
+        const row = (item) => `
+          <span class="tick mono ${item.symbol === store.state.activeSymbol ? 'active' : ''}" data-symbol="${item.symbol}">
+            ${item.symbol}&nbsp;${item.price.toFixed(item.price > 100 ? 2 : 4)}
+            <span class="${item.pct >= 0 ? 'pct-pos' : 'pct-neg'}">${item.pct >= 0 ? '+' : ''}${item.pct.toFixed(2)}%</span>
+          </span>`;
+        tickerTrack.innerHTML = [...items, ...items].map(row).join('');
+      }
+
+      function renderHealth(items) {
+        document.getElementById('health-rows').innerHTML = items.map((r) => `
+          <div class="health-row mono"><span class="led" style="color:${r.color}; background:${r.color}"></span><span>${r.name}</span><span class="val" style="color:${r.color}">${r.value}</span></div>`).join('');
+      }
+
+      function renderLogs(rows) {
+        const toRow = (r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td><span class="badge" style="color:${severityColor[r[2]]}">${r[2]}</span></td><td>${r[3]}</td></tr>`;
+        document.getElementById('event-body').innerHTML = rows.slice(0, 8).map(toRow).join('');
+        document.getElementById('preview-body').innerHTML = rows.slice(0, 5).map(toRow).join('');
+      }
+
+      function seedVisuals() {
+        document.getElementById('candles').innerHTML = Array.from({ length: 28 }).map(() => {
+          const h = randomBetween(18, 125);
+          const up = Math.random() > .48;
+          return `<div class="candle" style="height:${h}px; background:${up ? 'rgba(0,255,106,.9)' : 'rgba(255,59,59,.9)'}"></div>`;
+        }).join('');
+
+        document.getElementById('heatmap').innerHTML = Array.from({ length: 100 }).map(() => {
+          const v = randomBetween(-1, 1);
+          const color = v > 0
+            ? `rgba(0,255,106,${Math.abs(v) * .65 + .12})`
+            : `rgba(255,59,59,${Math.abs(v) * .5 + .1})`;
+          return `<div class="heatbox" style="background:${color}"></div>`;
+        }).join('');
+
+        document.getElementById('mini-heatmap').innerHTML = Array.from({ length: 112 }).map((_, i) => {
+          const zone = i % 16;
+          let color = `rgba(0,255,106,${randomBetween(.12, .55)})`;
+          if (zone > 8 && zone < 13) color = `rgba(255,59,59,${randomBetween(.2, .6)})`;
+          if (zone >= 13) color = `rgba(255,59,59,${randomBetween(.45, .8)})`;
+          return `<div class="mini-cell" style="background:${color}"></div>`;
+        }).join('');
+      }
+
+      store.subscribe((s) => s.ticker, (items) => {
+        renderTicker(items);
+        const selected = items.find((x) => x.symbol === store.state.activeSymbol) || items[0];
+        activePriceNode.textContent = selected.price.toFixed(2);
+        activePriceNode.classList.add('flash');
+        setTimeout(() => activePriceNode.classList.remove('flash'), 240);
+      });
+      store.subscribe((s) => s.health, renderHealth);
+      store.subscribe((s) => s.logs, renderLogs);
+      store.subscribe((s) => s.activeSymbol, (symbol) => {
+        activeSymbolNode.textContent = symbol;
+        renderTicker(store.state.ticker);
+      });
+
+      tickerTrack.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-symbol]');
+        if (!target) return;
+        store.set({ activeSymbol: target.dataset.symbol });
+      });
+
+      setInterval(() => {
+        const next = store.state.ticker.map((item) => {
+          const drift = randomBetween(-0.007, 0.007);
+          return {
+            ...item,
+            price: Math.max(item.price * (1 + drift), 0.0001),
+            pct: Math.max(-9.9, Math.min(12, item.pct + randomBetween(-0.18, 0.18))),
+          };
+        });
+        store.set({ ticker: next });
+      }, 800);
+
+      setInterval(() => {
+        const dt = new Date();
+        const time = dt.toTimeString().slice(0, 8);
+        const sev = pick(['INFO', 'WARN', 'ALERT', 'SAFE']);
+        const msg = pick([
+          'Execution router in paper mode.',
+          'Published abstract signal update.',
+          'Risk edge threshold recomputed.',
+          'Data channel jitter detected.',
+          'Strategy lineage tag updated.',
+          'Minor heartbeat received.',
+        ]);
+        const next = [[time, pick(['Sigmax', 'Chronos', 'Hermes', 'Vault', 'Orion']), sev, msg], ...store.state.logs].slice(0, 20);
+        store.set({ logs: next });
+      }, randomBetween(3000, 6000));
+
+      setInterval(() => {
+        if (Math.random() < 0.6) return;
+        const health = store.state.health.map((h) => ({ ...h }));
+        const target = health[Math.floor(randomBetween(0, 4))];
+        if (target.name === 'Webhooks') {
+          target.value = target.value === 'DEGRADED' ? 'CONNECTED' : 'DEGRADED';
+          target.color = target.value === 'CONNECTED' ? 'var(--green)' : 'var(--amber)';
+        }
+        if (target.name === 'Market Data') target.value = 'CONNECTED';
+        if (target.name === 'Risk Engine') target.value = 'SAFE';
+        store.set({ health });
+      }, 9000);
+
+      seedVisuals();
+    </script>
   </body>
 </html>
