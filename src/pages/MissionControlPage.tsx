@@ -25,38 +25,57 @@ export function MissionControlPage() {
 
   return (
     <div className="page-grid">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ margin: 0 }}>Mission Control</h2>
+        <button className="btn" style={{ background: 'rgba(132,204,22,.18)', borderColor: 'rgba(132,204,22,.45)' }}>Add Agent +</button>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '260px repeat(3, 1fr)', gap: 12 }}>
         <CardShell title="Active Agents">
           {agents.slice(0, 6).map((a) => (
-            <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
               <div>
                 <strong style={{ fontSize: 13 }}>{a.id}</strong>
                 <div className="muted" style={{ fontSize: 12 }}>{a.action}</div>
               </div>
-              <span style={{ width: 10, height: 10, marginTop: 6, borderRadius: 99, background: a.status === 'RUNNING' ? '#84cc16' : a.status === 'DEGRADED' ? '#f59e0b' : '#64748b' }} />
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  marginTop: 6,
+                  borderRadius: 99,
+                  background: a.status === 'RUNNING' ? '#84cc16' : a.status === 'DEGRADED' ? '#f59e0b' : '#64748b',
+                }}
+              />
             </div>
           ))}
         </CardShell>
 
-        <CardShell title="Total Agents"><div style={{ fontSize: 46, fontWeight: 700 }}>12</div><div className="muted">{Math.round((counts.active / 6) * 100)}% active</div></CardShell>
-        <CardShell title="Tasks Completed"><div style={{ fontSize: 46, fontWeight: 700 }}>1,458</div><div className="muted">12% today</div></CardShell>
-        <CardShell title="Uptime"><div style={{ fontSize: 46, fontWeight: 700 }}>98.7%</div><div className="muted">42 days stable</div></CardShell>
+        <CardShell title="Total Agents"><div className="kpi-value">12</div><div className="muted">75% active</div></CardShell>
+        <CardShell title="Tasks Completed"><div className="kpi-value">1,458</div><div className="muted">12% today</div></CardShell>
+        <CardShell title="Operational Uptime"><div className="kpi-value">98.7%</div><div className="muted">42 days stable</div></CardShell>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: 12 }}>
         <CardShell title="Agent Performance">
-          <div style={{ height: 240, borderRadius: 12, border: '1px solid rgba(148,163,184,.16)', background: 'linear-gradient(180deg, rgba(168,85,247,.14), rgba(15,23,42,.2))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            Trend lines (Accuracy / Processing Throughput)
+          <div style={{ height: 250, borderRadius: 12, border: '1px solid rgba(148,163,184,.16)', background: 'linear-gradient(180deg, rgba(148,163,184,.08), rgba(15,23,42,.18))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            Accuracy vs Processing Throughput (weekly trend)
           </div>
+
+          <div className="h-sep" />
 
           <CardShell title="System Health Matrix">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10 }}>
               {[
-                ['Market Data', 'CONNECTED', 'success'], ['Execution', 'PAPER', 'warn'], ['Risk Engine', 'SAFE', 'success'], ['Webhooks', 'DEGRADED', 'warn'], ['Incidents', '2 open', 'error'],
+                ['Market Data', 'CONNECTED', 'success'],
+                ['Execution', 'PAPER', 'warn'],
+                ['Risk Engine', 'SAFE', 'success'],
+                ['Webhooks', 'DEGRADED', 'warn'],
+                ['Error Budget', '2 incidents', 'error'],
               ].map(([k, v, tone]) => (
-                <button key={String(k)} className="btn" onClick={() => setDrawer(String(k))} style={{ textAlign: 'left' }}>
-                  <div>{k}</div>
-                  <div style={{ marginTop: 6 }}><StatusPill label={String(v)} tone={tone as any} /></div>
+                <button key={String(k)} className="btn" onClick={() => setDrawer(String(k))} style={{ textAlign: 'left', minHeight: 82 }}>
+                  <div style={{ fontWeight: 600 }}>{k}</div>
+                  <div style={{ marginTop: 8 }}><StatusPill label={String(v)} tone={tone as any} /></div>
                 </button>
               ))}
             </div>
@@ -74,22 +93,26 @@ export function MissionControlPage() {
 
           <CardShell title="Quick Actions" action={<label><input type="checkbox" checked={devMode} onChange={(e) => setDevMode(e.target.checked)} /> Developer Mode</label>}>
             <div style={{ display: 'flex', gap: 8 }}>
-              {['Restart', 'Pause', 'View logs'].map((c) => <button key={c} className="btn" disabled={!devMode}>{c}</button>)}
+              {['Restart', 'Pause'].map((c) => <button key={c} className="btn" disabled={!devMode}>{c}</button>)}
             </div>
-            <div className="muted" style={{ marginTop: 8 }}>Controls stay disabled unless Developer Mode is enabled.</div>
+            <button className="btn" style={{ marginTop: 8, width: '100%' }} disabled={!devMode}>View detailed analytics</button>
+            <div className="muted" style={{ marginTop: 8 }}>Controls are disabled by default for safe operations.</div>
           </CardShell>
         </div>
       </div>
 
       <CardShell title="Event / Log Viewer">
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <select className="select" value={severity} onChange={(e) => setSeverity(e.target.value as any)}><option>ALL</option><option>INFO</option><option>WARN</option><option>ERROR</option></select>
+          <select className="select" value={severity} onChange={(e) => setSeverity(e.target.value as any)}>
+            <option>ALL</option><option>INFO</option><option>WARN</option><option>ERROR</option>
+          </select>
           <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search logs" />
           <button className="btn">Newest on top</button>
+          <button className="btn">Copy row</button>
         </div>
-        <div style={{ maxHeight: 260, overflow: 'auto' }}>
+        <div style={{ maxHeight: 270, overflow: 'auto' }}>
           {filteredLogs.map((l, i) => (
-            <div key={i} style={{ borderLeft: '2px solid rgba(59,130,246,.5)', padding: '8px 10px', marginBottom: 6, background: 'rgba(2,6,23,.35)' }}>
+            <div key={i} className="log-row">
               <small className="muted">{l.ts} • {l.agent} • {l.severity}</small>
               <div>{l.message}</div>
             </div>
@@ -103,11 +126,11 @@ export function MissionControlPage() {
           <button className="btn">Propose</button>
           <button className="btn">Confirm</button>
         </div>
-        <p className="muted">Secrets stay masked. Reveal requires warning acknowledgement.</p>
+        <p className="muted">All secrets remain masked in audit records and require explicit reveal warning.</p>
       </CardShell>
 
       <Drawer open={Boolean(drawer)} onClose={() => setDrawer(null)} title={`${drawer} Details`}>
-        <p className="muted">Expanded health diagnostics drawer for {drawer}.</p>
+        <p className="muted">Expanded diagnostics and incident context for {drawer}.</p>
       </Drawer>
     </div>
   )
