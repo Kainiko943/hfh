@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Northstar Terminal — Markets</title>
+    <style>
+      :root {
+        --bg: #05070d;
+        --panel: #0b111c;
+        --panel-2: #0f1626;
+        --border: rgba(255, 255, 255, 0.06);
+        --text: rgba(255, 255, 255, 0.92);
+        --text-secondary: rgba(255, 255, 255, 0.62);
+        --text-muted: rgba(255, 255, 255, 0.42);
+        --green: #00ff6a;
+        --red: #ff3b3b;
+        --amber: #ffc400;
+        --blue: #00a3ff;
+        --radius-lg: 14px;
+        --radius-md: 12px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        font-family: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+        font-variant-numeric: tabular-nums;
+        background: radial-gradient(circle at 50% 0%, rgba(0, 163, 255, 0.1), transparent 55%), #05070d;
+      }
+      .app {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+      }
+      .topbar {
+        display: grid;
+        grid-template-columns: 220px 1fr 320px;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(15, 22, 38, 0.98), rgba(11, 17, 28, 0.96));
+      }
+      .brand { font-size: 30px; font-weight: 700; letter-spacing: 0.02em; }
+      .sub { color: var(--text-secondary); font-size: 12px; }
+      .status-strip { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+      .pill {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 10px;
+        background: rgba(15, 22, 38, 0.8);
+        font-size: 12px;
+      }
+      .search { border: 1px solid var(--border); border-radius: 8px; background: #0a0f19; color: var(--text); padding: 9px 10px; width: 100%; }
+
+      .layout { display: grid; grid-template-columns: 228px 1fr; gap: 10px; }
+      .panel {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: linear-gradient(180deg, rgba(15,22,38,.96), rgba(11,17,28,.96));
+      }
+      .sidebar { padding: 12px; }
+      .nav { display: grid; gap: 6px; }
+      .nav a {
+        text-decoration: none;
+        color: var(--text-secondary);
+        padding: 10px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.02);
+      }
+      .nav a.active { color: var(--text); border-color: var(--border); background: rgba(0,163,255,.08); }
+
+      .content { display: grid; gap: 10px; }
+      .ticker-wrap {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: rgba(11, 17, 28, 0.95);
+        white-space: nowrap;
+      }
+      .ticker-track { display: inline-flex; gap: 18px; padding: 8px 0; animation: marquee 26s linear infinite; }
+      .ticker-wrap:hover .ticker-track { animation-play-state: paused; }
+      @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+      .ticker-item { cursor: pointer; padding: 0 12px; font-size: 14px; color: var(--text-secondary); }
+      .ticker-item.active { color: var(--text); }
+      .up { color: var(--green); }
+      .down { color: var(--red); }
+
+      .workstation-grid { display: grid; grid-template-columns: minmax(640px, 1fr) 360px; gap: 10px; }
+      .chart-card { padding: 12px; display: grid; gap: 8px; }
+      .title { font-size: 34px; font-weight: 700; }
+      .section-title { font-size: 16px; margin: 0; }
+      .controls, .indicator-row { display: flex; gap: 6px; align-items: center; }
+      .btn {
+        border: 1px solid var(--border); background: rgba(255,255,255,.02); color: var(--text-secondary);
+        border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+      }
+      .btn.active { color: var(--text); border-color: rgba(0,163,255,.5); background: rgba(0,163,255,.1); }
+      .toggle { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+      .chart-surface {
+        height: 320px; border: 1px solid var(--border); border-radius: 10px; background: #090d16; position: relative; overflow: hidden;
+      }
+      .grid-line { stroke: rgba(255,255,255,.05); stroke-width: 1; }
+      .line-price { fill: none; stroke: #9de6ff; stroke-width: 2; }
+      .line-ma { fill: none; stroke: rgba(255,255,255,.5); stroke-width: 1.5; }
+      .line-ema { fill: none; stroke: rgba(255,196,0,.8); stroke-width: 1.2; }
+
+      .stats-strip { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; align-items: center; border: 1px solid var(--border); border-radius: 10px; padding: 8px; background: rgba(6,9,15,.8); }
+      .stat .k { color: var(--text-muted); font-size: 11px; }
+      .stat .v { font-size: 18px; margin-top: 2px; }
+      .sparkline { width: 100%; height: 38px; }
+
+      .right-stack { display: grid; gap: 10px; }
+      .book, .trades { padding: 10px; }
+      .table-head, .tape-head, .row { display: grid; grid-template-columns: 1.2fr .9fr .9fr .8fr; gap: 6px; font-size: 12px; }
+      .table-head, .tape-head { color: var(--text-muted); padding: 4px 2px; border-bottom: 1px solid var(--border); }
+      .book-rows { height: 210px; overflow: auto; position: relative; }
+      .row { padding: 4px 2px; border-bottom: 1px solid rgba(255,255,255,0.03); position: relative; }
+      .row::before { content: ""; position: absolute; inset: 1px; border-radius: 4px; pointer-events: none; }
+      .row.bid::before { background: linear-gradient(90deg, rgba(0,255,106,.14), transparent); width: calc(var(--depth, 0) * 1%); }
+      .row.ask::before { background: linear-gradient(90deg, rgba(255,59,59,.14), transparent); width: calc(var(--depth, 0) * 1%); }
+      .pulse { animation: pulse .22s ease; }
+      @keyframes pulse { from { background: rgba(0,163,255,.18); } to { background: transparent; } }
+
+      .book-meta, .tape-meta { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; color: var(--text-secondary); font-size: 12px; display: flex; justify-content: space-between; }
+      .tape-rows { height: 166px; overflow: auto; }
+      .tape-row { display:grid; grid-template-columns: 1fr .8fr .7fr .6fr; gap:6px; padding:4px 2px; font-size:12px; border-bottom:1px solid rgba(255,255,255,.03); }
+      .slide-in { animation: slide .12s ease; }
+      @keyframes slide { from { transform: translateY(-4px); opacity: .2; } to { transform: translateY(0); opacity: 1; } }
+
+      .perf { padding: 10px; display: grid; gap: 8px; }
+      .perf-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .tab-row, .filter-row { display: flex; gap: 6px; }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      th, td { border-bottom: 1px solid rgba(255,255,255,.05); padding: 7px 6px; text-align: left; }
+      th { color: var(--text-muted); cursor: pointer; }
+      .badge { border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; font-size: 11px; }
+      .summary { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+      .sum .k { color: var(--text-muted); font-size: 11px; }
+      .sum .v { font-size: 20px; }
+      .equity { height: 120px; border: 1px solid var(--border); border-radius: 10px; background: #090d16; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ticker-track, .pulse, .slide-in { animation: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar panel">
+        <div>
+          <div class="brand">Markets</div>
+          <div class="sub">SIGMA Command Center</div>
+        </div>
+        <div class="status-strip">
+          <span class="pill">Market <span class="up">CONNECTED</span></span>
+          <span class="pill">Risk <span class="up">SAFE</span></span>
+          <span class="pill">Session <span class="down">PAPER</span></span>
+        </div>
+        <input class="search" placeholder="Search symbols, agents, orders..." />
+      </header>
+
+      <section class="layout">
+        <aside class="sidebar panel">
+          <div class="sub" style="margin-bottom:10px">Northstar Terminal</div>
+          <nav class="nav">
+            <a href="index.html">Dashboard</a>
+            <a class="active" href="markets.html">Markets</a>
+            <a class="active" href="markets.html">Markets</a>
+            <a href="#">Mission Control</a>
+            <a href="#">Alerts</a>
+            <a href="#">Settings</a>
+          </nav>
+        </aside>
+
+        <main class="content">
+          <section class="ticker-wrap" id="tickerWrap"><div id="tickerTrack" class="ticker-track"></div></section>
+
+          <section class="workstation-grid">
+            <article class="panel chart-card">
+              <h2 id="workstationTitle" class="section-title">Advanced Chart Workstation — BTCUSDT</h2>
+              <div class="controls" id="timeframeControls"></div>
+              <div class="indicator-row">
+                <label class="toggle"><input type="checkbox" id="maToggle" checked/> MA/EMA</label>
+                <label class="toggle"><input type="checkbox" id="vwapToggle" checked/> VWAP</label>
+                <label class="toggle"><input type="checkbox" id="volumeToggle" checked/> Volume</label>
+              </div>
+              <div class="chart-surface"><svg id="chartSvg" viewBox="0 0 900 320" preserveAspectRatio="none" width="100%" height="100%"></svg></div>
+              <section class="stats-strip" id="statsStrip"></section>
+            </article>
+
+            <aside class="right-stack">
+              <article class="panel book">
+                <h3 class="section-title">Order Book</h3>
+                <div class="table-head"><span>Price</span><span>Size</span><span>Total</span><span>Depth</span></div>
+                <div class="book-rows" id="bookRows"></div>
+                <div class="book-meta"><span id="spreadLine">Spread 0.00</span><span id="latencyLine">Latency 41 ms</span></div>
+              </article>
+              <article class="panel trades">
+                <h3 class="section-title">Recent Trades</h3>
+                <div class="tape-head"><span>Timestamp</span><span>Price</span><span>Side</span><span>Qty</span></div>
+                <div class="tape-rows" id="tapeRows"></div>
+                <div class="tape-meta"><span>Auto-scroll</span><label><input type="checkbox" id="lockTape"/> lock</label></div>
+              </article>
+            </aside>
+          </section>
+
+          <section class="panel perf">
+            <div class="perf-top">
+              <div class="tab-row" id="perfTabs"></div>
+              <div class="filter-row" id="perfFilters"></div>
+            </div>
+            <h3 class="section-title" style="margin:0">Trading Performance</h3>
+            <div style="overflow:auto">
+              <table>
+                <thead><tr id="tradeHead"></tr></thead>
+                <tbody id="tradeBody"></tbody>
+              </table>
+            </div>
+            <div class="summary" id="summaryStrip"></div>
+            <div class="equity"><svg id="equitySvg" viewBox="0 0 1200 120" preserveAspectRatio="none" width="100%" height="100%"></svg></div>
+          </section>
+        </main>
+      </section>
+    </div>
+
+    <script>
+      const store = {
+        activeSymbol: 'BTCUSDT', timeframe: '1m', perfTab: 'Live Trades', period: 'Day', sortKey: 'pnl$', sortDir: 'desc',
+        tickers: ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','ADAUSDT','DOGEUSDT'].map((s,i)=>({symbol:s,last: [9862.62,203.14,213.9,702.02,.832,11.31,.133][i], pct:[1.19,-1.3,1.15,1.7,1.15,11.3,-2.1][i]})),
+        candles: [],
+        orderbook: { bids: [], asks: [] }, tape: [], liveTrades: [], closedTrades: [], pnlSeries: []
+      };
+      const subscribers = { ticker:[], chart:[], book:[], tape:[], perf:[] };
+      const emit = (k) => subscribers[k].forEach(fn=>fn());
+      const on = (k, fn) => subscribers[k].push(fn);
+      const tf = ['1m','5m','15m','1h','4h','1D'];
+
+      function seedSymbolData(symbol) {
+        const base = store.tickers.find(t=>t.symbol===symbol)?.last || 100;
+        store.candles = Array.from({length:90}, (_,i)=> base * (1 + Math.sin(i/13)*0.008 + (Math.random()-0.5)*0.008) + i*0.12);
+        store.orderbook.bids = Array.from({length:90}, (_,i)=>({ price: base - i*0.38, size: 0.5 + Math.random()*2.2, total: i*0.9+1, depth: Math.random()*100, pulse:false }));
+        store.orderbook.asks = Array.from({length:90}, (_,i)=>({ price: base + i*0.38, size: 0.5 + Math.random()*2.2, total: i*0.9+1, depth: Math.random()*100, pulse:false }));
+        store.tape = Array.from({length:55}, (_,i)=>mkTrade(base,i));
+        store.liveTrades = Array.from({length:8}, (_,i)=>mkPerf(symbol,true,i));
+        store.closedTrades = Array.from({length:14}, (_,i)=>mkPerf(symbol,false,i));
+        store.pnlSeries = Array.from({length:80}, (_,i)=> 10000 + i*26 + Math.sin(i/7)*130 + (Math.random()-0.5)*90);
+      }
+      const mkTrade = (base, idx=0)=> ({ ts: new Date(Date.now()-idx*1200).toLocaleTimeString(), price: +(base + (Math.random()-.5)*7).toFixed(2), side: Math.random()>.48?'Buy':'Sell', qty:+(Math.random()*7).toFixed(3), id: crypto.randomUUID() });
+      const mkPerf = (symbol, live, i)=> {
+        const pnl = +(Math.random()*1600 - (live?300:100)).toFixed(2);
+        return { symbol, side: Math.random()>.4?'Long':'Short', status: live?'Open':'Closed', entry: +(Math.random()*10000).toFixed(2), exit: live?'-':+(Math.random()*10000).toFixed(2), qty:+(Math.random()*3).toFixed(2), 'pnl$': pnl, 'pnl%': +(pnl/1000).toFixed(2), entryTime: new Date(Date.now()-i*142000).toLocaleTimeString(), closeTime: live?'-':new Date(Date.now()-i*98000).toLocaleTimeString(), notes:'alpha-'+(i+1) };
+      };
+
+      seedSymbolData(store.activeSymbol);
+
+      function renderTicker() {
+        const track = document.getElementById('tickerTrack');
+        const list = [...store.tickers, ...store.tickers];
+        track.innerHTML = list.map(t=>`<span class="ticker-item ${store.activeSymbol===t.symbol?'active':''}" data-symbol="${t.symbol}">${t.symbol} <strong>${t.last.toFixed(2)}</strong> <span class="${t.pct>=0?'up':'down'}">${t.pct>=0?'+':''}${t.pct.toFixed(2)}%</span></span>`).join('');
+        track.querySelectorAll('.ticker-item').forEach(el=>el.onclick=()=>{ const symbol=el.dataset.symbol; store.activeSymbol=symbol; seedSymbolData(symbol); emit('ticker'); emit('chart'); emit('book'); emit('tape'); emit('perf'); });
+      }
+
+      function renderControls() {
+        const row = document.getElementById('timeframeControls');
+        row.innerHTML = tf.map(v=>`<button class="btn ${store.timeframe===v?'active':''}" data-tf="${v}">${v}</button>`).join('');
+        row.querySelectorAll('.btn').forEach(b=>b.onclick=()=>{store.timeframe=b.dataset.tf; renderControls();});
+      }
+
+      function polyline(points, cls) {
+        return `<polyline class="${cls}" points="${points.map((y,i)=>`${(i/(points.length-1))*900},${Math.max(10,300-((y-min)/(max-min||1))*250)}`).join(' ')}"/>`;
+      }
+      let min,max;
+      function renderChart() {
+        document.getElementById('workstationTitle').textContent = `Advanced Chart Workstation — ${store.activeSymbol}`;
+        const svg = document.getElementById('chartSvg');
+        const c = store.candles; min=Math.min(...c); max=Math.max(...c);
+        const ma = c.map((_,i)=> i<6?c[i]: c.slice(i-6,i+1).reduce((a,b)=>a+b,0)/7);
+        const ema = c.map((v,i)=> i===0?v:(v*0.18 + c[i-1]*0.82));
+        const gridX = Array.from({length:10},(_,i)=>`<line class="grid-line" x1="${i*100}" y1="0" x2="${i*100}" y2="320"/>`).join('');
+        const gridY = Array.from({length:6},(_,i)=>`<line class="grid-line" x1="0" y1="${i*53}" x2="900" y2="${i*53}"/>`).join('');
+        const showMA = document.getElementById('maToggle').checked;
+        svg.innerHTML = `${gridX}${gridY}${polyline(c,'line-price')}${showMA?polyline(ma,'line-ma'):''}${showMA?polyline(ema,'line-ema'):''}`;
+        const last = c[c.length-1], prev = c[c.length-2];
+        const stats = [
+          ['Last', last.toFixed(2)], ['Spread', (store.orderbook.asks[0].price-store.orderbook.bids[0].price).toFixed(2)],
+          ['24h%', ((last/ c[0]-1)*100).toFixed(2)+'%'], ['Volume', (1.1+Math.random()).toFixed(2)+'B'],
+          ['Funding', (Math.random()*0.03).toFixed(3)+'%'], ['Regime', prev<last?'Bull':'Range'], ['Grade', prev<last?'A':'B+']
+        ];
+        document.getElementById('statsStrip').innerHTML = stats.map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v ${String(v).includes('-')?'down':'up'}">${v}</div></div>`).join('') + `<svg class="sparkline" viewBox="0 0 160 38"><polyline fill="none" stroke="#00ff6a" stroke-width="2" points="${store.pnlSeries.slice(-25).map((v,i)=>`${i*6.5},${35-((v-Math.min(...store.pnlSeries))/(Math.max(...store.pnlSeries)-Math.min(...store.pnlSeries)||1))*30}`).join(' ')}"/></svg>`;
+      }
+
+      function renderBook() {
+        const el = document.getElementById('bookRows');
+        const rows = [...store.orderbook.asks.slice(0,18).reverse().map(r=>({...r,type:'ask'})), ...store.orderbook.bids.slice(0,18).map(r=>({...r,type:'bid'}))];
+        el.innerHTML = rows.map(r=>`<div class="row ${r.type} ${r.pulse?'pulse':''}" style="--depth:${r.depth.toFixed(0)}"><span class="${r.type==='bid'?'up':'down'}">${r.price.toFixed(2)}</span><span>${r.size.toFixed(3)}</span><span>${r.total.toFixed(2)}</span><span>${r.depth.toFixed(0)}%</span></div>`).join('');
+        const spread = store.orderbook.asks[0].price - store.orderbook.bids[0].price;
+        document.getElementById('spreadLine').textContent = `Best spread: ${spread.toFixed(2)} / ${(spread/store.orderbook.asks[0].price*100).toFixed(2)}%`;
+        document.getElementById('latencyLine').innerHTML = `Latency <span class="up">${(34+Math.floor(Math.random()*15))} ms</span>`;
+      }
+
+      function renderTape() {
+        const wrap = document.getElementById('tapeRows');
+        const lock = document.getElementById('lockTape').checked;
+        wrap.innerHTML = store.tape.slice(0,48).map((t,i)=>`<div class="tape-row ${i===0?'slide-in':''}"><span>${t.ts}</span><span class="${t.side==='Buy'?'up':'down'}">${t.price.toFixed(2)}</span><span class="${t.side==='Buy'?'up':'down'}">${t.side}</span><span>${t.qty}</span></div>`).join('');
+        if (!lock) wrap.scrollTop = 0;
+      }
+
+      const columns = ['symbol','side','status','entry','exit','qty','pnl$','pnl%','entryTime','closeTime','notes'];
+      function renderPerf() {
+        const tabs = ['Live Trades','Closed Trades','P&L'];
+        const filters = ['Day','Month','Year'];
+        document.getElementById('perfTabs').innerHTML = tabs.map(t=>`<button class="btn ${store.perfTab===t?'active':''}" data-t="${t}">${t}</button>`).join('');
+        document.getElementById('perfFilters').innerHTML = filters.map(t=>`<button class="btn ${store.period===t?'active':''}" data-p="${t}">${t}</button>`).join('');
+        document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{store.perfTab=b.dataset.t; renderPerf();});
+        document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{store.period=b.dataset.p; renderPerf();});
+        document.getElementById('tradeHead').innerHTML = columns.map(c=>`<th data-s="${c}">${c}</th>`).join('');
+        let data = store.perfTab==='Live Trades'?store.liveTrades:store.closedTrades;
+        if (store.perfTab==='P&L') data = [...store.liveTrades, ...store.closedTrades];
+        data = [...data].sort((a,b)=> (a[store.sortKey] > b[store.sortKey] ? 1 : -1) * (store.sortDir==='asc'?1:-1));
+        document.getElementById('tradeBody').innerHTML = data.slice(0,14).map(r=>`<tr><td>${r.symbol}</td><td class="${r.side==='Long'?'up':'down'}">${r.side}</td><td><span class="badge">${r.status}</span></td><td>${r.entry}</td><td>${r.exit}</td><td>${r.qty}</td><td class="${r['pnl$']>=0?'up':'down'}">${r['pnl$']>=0?'+':''}${r['pnl$']}</td><td class="${r['pnl%']>=0?'up':'down'}">${r['pnl%']}%</td><td>${r.entryTime}</td><td>${r.closeTime}</td><td>${r.notes}</td></tr>`).join('');
+        document.querySelectorAll('#tradeHead th').forEach(th=>th.onclick=()=>{const k=th.dataset.s; store.sortDir=(store.sortKey===k && store.sortDir==='desc')?'asc':'desc'; store.sortKey=k; renderPerf();});
+
+        const all = [...store.liveTrades, ...store.closedTrades];
+        const wins = all.filter(t=>t['pnl$']>0); const losses = all.filter(t=>t['pnl$']<0);
+        const summary = {
+          'Net P&L': all.reduce((a,b)=>a+b['pnl$'],0), 'Trade Count': all.length,
+          'Avg Win': wins.reduce((a,b)=>a+b['pnl$'],0)/(wins.length||1), 'Avg Loss': losses.reduce((a,b)=>a+b['pnl$'],0)/(losses.length||1),
+          'Win Streak': Math.floor(Math.random()*10), 'Loss Streak': Math.floor(Math.random()*4), 'Win Rate': (wins.length/(all.length||1))*100
+        };
+        document.getElementById('summaryStrip').innerHTML = Object.entries(summary).map(([k,v])=>`<div class="sum"><div class="k">${k}</div><div class="v ${Number(v)>=0?'up':'down'}">${typeof v==='number'?(k.includes('Rate')?v.toFixed(0)+'%':v.toFixed(2)):v}</div></div>`).join('');
+
+        const e = document.getElementById('equitySvg');
+        const s = store.pnlSeries; const mn=Math.min(...s), mx=Math.max(...s);
+        const pts = s.map((v,i)=>`${(i/(s.length-1))*1200},${112-((v-mn)/(mx-mn||1))*95}`).join(' ');
+        e.innerHTML = `<rect x="0" y="0" width="1200" height="120" fill="transparent"/>${Array.from({length:8},(_,i)=>`<line x1="${i*150}" y1="0" x2="${i*150}" y2="120" class="grid-line"/>`).join('')}<polyline points="${pts}" fill="none" stroke="#00ff6a" stroke-width="2"/>`;
+      }
+
+      function tickersLoop() {
+        store.tickers = store.tickers.map(t=>({ ...t, last: +(t.last + (Math.random()-.5)*1.6).toFixed(2), pct: +(t.pct + (Math.random()-.5)*.12).toFixed(2) }));
+        emit('ticker');
+      }
+      function bookLoop() {
+        const n = ()=> (Math.random()-.5)*0.16;
+        ['bids','asks'].forEach(side=>store.orderbook[side] = store.orderbook[side].map((r,i)=> i<45 ? ({...r, price:+(r.price+n()).toFixed(2), size:Math.max(.01, +(r.size+n()).toFixed(3)), depth:Math.max(1,Math.min(100,r.depth+(Math.random()*12-6))), pulse: Math.random()>.83 }) : r));
+        emit('book');
+      }
+      function tapeLoop() {
+        const base = store.tickers.find(t=>t.symbol===store.activeSymbol)?.last || 100;
+        store.tape.unshift(mkTrade(base));
+        store.tape = store.tape.slice(0,120);
+        emit('tape');
+      }
+      function pnlLoop() {
+        store.liveTrades = store.liveTrades.map(t=>({ ...t, 'pnl$': +(t['pnl$'] + (Math.random()*220-100)).toFixed(2), 'pnl%': +(t['pnl%'] + (Math.random()-.5)*.3).toFixed(2)}));
+        store.pnlSeries.push(store.pnlSeries[store.pnlSeries.length-1] + (Math.random()*120-40));
+        store.pnlSeries = store.pnlSeries.slice(-120);
+        emit('perf'); emit('chart');
+      }
+
+      on('ticker', renderTicker);
+      on('chart', renderChart);
+      on('book', renderBook);
+      on('tape', renderTape);
+      on('perf', renderPerf);
+      renderControls(); renderTicker(); renderChart(); renderBook(); renderTape(); renderPerf();
+
+      document.getElementById('maToggle').onchange = ()=> emit('chart');
+      setInterval(tickersLoop, 800);
+      setInterval(bookLoop, 350);
+      setInterval(tapeLoop, 700);
+      setInterval(pnlLoop, 3000);
+    </script>
+  </body>
+</html>
