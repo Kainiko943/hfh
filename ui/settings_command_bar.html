@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Northstar Terminal — Prompt Settings</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Inter, Segoe UI, Arial, sans-serif;
+        background: radial-gradient(circle at top left, #1d4ed855, transparent), #070b14;
+        color: #e2e8f0;
+      }
+      .wrap { max-width: 920px; margin: 46px auto; padding: 0 16px; }
+      .panel {
+        border: 1px solid rgba(148,163,184,.22);
+        border-radius: 16px;
+        background: rgba(15,23,42,.8);
+        backdrop-filter: blur(10px);
+        padding: 18px;
+      }
+      h2 { margin: 0 0 6px; }
+      p { margin: 0; color: #94a3b8; }
+      .row { margin-top: 14px; display: grid; grid-template-columns: 1fr auto auto; gap: 8px; }
+      input, button {
+        background: #0f1728;
+        border: 1px solid rgba(148,163,184,.28);
+        color: #e2e8f0;
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      button { cursor: pointer; }
+      .primary { background: linear-gradient(135deg, #2563eb, #0891b2); border: 0; }
+      .secondary { background: rgba(148,163,184,.16); }
+      .preview { display: none; margin-top: 12px; border: 1px dashed rgba(148,163,184,.4); border-radius: 10px; padding: 10px; }
+      .json { margin-top: 8px; background: #020617; border-radius: 8px; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; overflow: auto; }
+      .small { margin-top: 12px; font-size: 12px; color: #9ca3af; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="panel">
+        <h2>Prompt Settings (Privileged)</h2>
+        <p>Natural language → structured command → confirm. Secret keys are blocked here.</p>
+        <div class="row">
+          <input id="cmd" placeholder="Set Chronos to use openrouter model google/gemini-2.0-flash" />
+          <button class="primary" id="propose">Propose</button>
+          <button class="secondary" id="confirm">Confirm</button>
+        </div>
+        <div id="preview" class="preview"></div>
+        <div class="small">Use secure key field endpoint for credentials (`/api/llm/secret/openrouter`).</div>
+      </div>
+    </div>
+
+    <script>
+      const el = {
+        cmd: document.getElementById('cmd'),
+        propose: document.getElementById('propose'),
+        confirm: document.getElementById('confirm'),
+        preview: document.getElementById('preview')
+      };
+
+      let pending = null;
+      const secretPattern = /\b(?:sk|rk|or)-[A-Za-z0-9_-]{10,}\b/;
+
+      function parse(text) {
+        if (secretPattern.test(text)) {
+          return { error: 'For security, keys must be entered in the secure key field.' };
+        }
+        const t = text.toLowerCase();
+        if (t.includes('switch to openrouter') && t.includes('model to')) {
+          const model = (t.match(/model to\s+([a-z0-9./:_-]+)/) || [])[1] || 'unknown';
+          return {
+            parsed_command: { intent: 'set_global_provider_model', provider: 'openrouter', model },
+            diff_summary: `Change global provider: openrouter; model: ${model}`
+          };
+        }
+        const m = t.match(/set\s+([a-z0-9 _-]+)\s+to\s+use\s+openrouter\s+model\s+([a-z0-9./:_-]+)/);
+        if (m) {
+          const agent_id = m[1].trim().replace(/\s+/g, '_');
+          const model = m[2];
+          return {
+            parsed_command: { intent: 'set_agent_override', agent_id, provider: 'openrouter', model },
+            diff_summary: `Set agent override: ${agent_id} -> openrouter/${model}`
+          };
+        }
+        return { error: 'Unsupported command for UI demo.' };
+      }
+
+      el.propose.addEventListener('click', () => {
+        const result = parse(el.cmd.value.trim());
+        el.preview.style.display = 'block';
+        if (result.error) {
+          pending = null;
+          el.preview.innerHTML = `<strong style="color:#fca5a5">Blocked</strong><div>${result.error}</div>`;
+          return;
+        }
+        pending = result;
+        el.preview.innerHTML = `
+          <strong style="color:#86efac">Proposal Ready</strong>
+          <div>${result.diff_summary}</div>
+          <div class="json">${JSON.stringify(result.parsed_command, null, 2)}</div>
+        `;
+      });
+
+      el.confirm.addEventListener('click', () => {
+        el.preview.style.display = 'block';
+        if (!pending) {
+          el.preview.innerHTML = `<strong style="color:#fcd34d">No proposal</strong><div>Run Propose first.</div>`;
+          return;
+        }
+        el.preview.innerHTML = `<strong style="color:#86efac">Applied</strong><div>Settings updated (UI demo).</div>`;
+        pending = null;
+      });
+    </script>
+  </body>
+</html>

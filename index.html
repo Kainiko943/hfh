@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Northstar Terminal — SIGMA Command Center</title>
+    <style>
+      :root {
+        --bg: #070b14;
+        --panel: rgba(15, 23, 42, 0.72);
+        --panel-solid: #0f1728;
+        --border: rgba(148, 163, 184, 0.18);
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --cyan: #22d3ee;
+        --blue: #3b82f6;
+        --green: #22c55e;
+        --amber: #f59e0b;
+        --red: #ef4444;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: radial-gradient(1200px 700px at 20% -10%, #1e3a8a50, transparent), var(--bg); color: var(--text); font-family: Inter, Segoe UI, Arial, sans-serif; }
+      .app { min-height: 100vh; display: grid; grid-template-columns: 250px 1fr; }
+
+      .sidebar {
+        border-right: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(15,23,42,.85), rgba(2,6,23,.9));
+        padding: 18px 14px;
+      }
+      .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+      .brand-badge { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, #0ea5e9, #8b5cf6); }
+      .brand h1 { font-size: 18px; margin: 0; }
+      .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+      .nav a {
+        display: block; color: var(--text); text-decoration: none; padding: 10px 12px;
+        border-radius: 10px; margin-bottom: 6px; border: 1px solid transparent;
+      }
+      .nav a.active, .nav a:hover { background: rgba(59,130,246,.13); border-color: rgba(59,130,246,.35); }
+
+      .main { padding: 18px; }
+      .topbar {
+        display: flex; justify-content: space-between; align-items: center; gap: 12px;
+        margin-bottom: 16px; position: sticky; top: 0; z-index: 20;
+        background: rgba(7,11,20,.7); backdrop-filter: blur(8px); padding: 8px 0;
+      }
+      .title-wrap h2 { margin: 0; font-size: 24px; }
+      .title-wrap p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+      .actions { display: flex; align-items: center; gap: 10px; }
+      .search { background: var(--panel-solid); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 10px; min-width: 260px; }
+      .pill { border-radius: 999px; font-size: 12px; padding: 6px 10px; border: 1px solid var(--border); background: var(--panel); }
+      .pill.live { border-color: rgba(239,68,68,.4); color: #fecaca; background: rgba(239,68,68,.14); }
+
+      .ticker {
+        overflow: hidden; border: 1px solid var(--border); border-radius: 12px;
+        background: linear-gradient(90deg, rgba(30,41,59,.6), rgba(2,6,23,.7)); margin-bottom: 16px;
+      }
+      .ticker-track { display: inline-flex; white-space: nowrap; gap: 28px; padding: 10px 0; animation: scroll 26s linear infinite; }
+      .tk { color: var(--muted); font-size: 13px; }
+      .up { color: #4ade80; }
+      .down { color: #fb7185; }
+      @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+      .grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; }
+      .card {
+        background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+        padding: 14px; backdrop-filter: blur(10px);
+        box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      }
+      .card h3 { margin: 0 0 12px; font-size: 18px; }
+      .muted { color: var(--muted); }
+      .chart {
+        height: 220px; border: 1px solid rgba(148,163,184,.12); border-radius: 12px;
+        background: linear-gradient(180deg, rgba(34,211,238,.09), rgba(8,47,73,.03));
+        display: flex; align-items: center; justify-content: center;
+      }
+      .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+      .stat { background: rgba(15,23,42,.7); border: 1px solid rgba(148,163,184,.12); border-radius: 12px; padding: 10px; }
+      .stat .v { font-size: 21px; margin-top: 4px; }
+
+      .health-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+      .health { border-radius: 12px; border: 1px solid var(--border); padding: 10px; background: #0f1728; }
+      .health .s { font-size: 12px; margin-top: 4px; }
+      .ok { color: #4ade80; } .warn { color: #fbbf24; } .bad { color: #f87171; }
+
+      .lower { margin-top: 14px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+      .agents { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .agent { border: 1px solid rgba(148,163,184,.15); border-radius: 12px; padding: 10px; background: rgba(2,6,23,.35); }
+      .badge { font-size: 11px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); }
+      .running { color: #4ade80; border-color: rgba(74,222,128,.4); }
+      .idle { color: #a5b4fc; border-color: rgba(165,180,252,.35); }
+      .degraded { color: #fbbf24; border-color: rgba(251,191,36,.4); }
+
+      .timeline { max-height: 310px; overflow: auto; }
+      .event { border-left: 2px solid rgba(59,130,246,.45); padding: 8px 10px; margin-bottom: 8px; background: rgba(2,6,23,.35); border-radius: 6px; }
+      .event small { color: var(--muted); }
+
+      .settings-bar { margin-top: 14px; }
+      .settings-form { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; }
+      input, button {
+        border-radius: 10px; border: 1px solid var(--border); background: #0f1728; color: var(--text);
+        padding: 10px 12px;
+      }
+      button.primary { background: linear-gradient(135deg, #2563eb, #0ea5e9); border: 0; }
+      button.secondary { background: rgba(148,163,184,.16); }
+      .proposal { margin-top: 10px; padding: 10px; border: 1px dashed rgba(148,163,184,.4); border-radius: 10px; display: none; }
+
+      @media (max-width: 1080px) {
+        .app { grid-template-columns: 1fr; }
+        .sidebar { display: none; }
+        .grid, .lower { grid-template-columns: 1fr; }
+        .stats { grid-template-columns: repeat(2, 1fr); }
+        .health-strip { grid-template-columns: repeat(2, 1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-badge"></div>
+          <div>
+            <h1>Northstar Terminal</h1>
+            <div class="sub">SIGMA Command Center</div>
+          </div>
+        </div>
+        <nav class="nav">
+          <a class="active" href="#">Dashboard</a>
+          <a href="#">Markets</a>
+          <a href="#">Mission Control</a>
+          <a href="#">Alerts</a>
+          <a href="#">Settings</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <div class="topbar">
+          <div class="title-wrap">
+            <h2>Dashboard</h2>
+            <p>Professional multi-agent intelligence surface (safe / abstract outputs only)</p>
+          </div>
+          <div class="actions">
+            <span class="pill">Market Data: <span class="ok">CONNECTED</span></span>
+            <span class="pill live">Execution: PAPER</span>
+            <input class="search" placeholder="Search symbol / agent / event" />
+          </div>
+        </div>
+
+        <div class="ticker">
+          <div class="ticker-track" id="tickerTrack"></div>
+        </div>
+
+        <div class="grid">
+          <section class="card">
+            <h3>Market Overview</h3>
+            <div class="chart">
+              <svg width="95%" height="85%" viewBox="0 0 620 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 178 C75 160,90 110,150 134 C205 157,235 96,294 105 C350 113,385 62,444 70 C500 78,530 46,610 24" stroke="#22d3ee" stroke-width="3"/>
+                <path d="M10 178 C75 160,90 110,150 134 C205 157,235 96,294 105 C350 113,385 62,444 70 C500 78,530 46,610 24 L610 210 L10 210 Z" fill="url(#g)" opacity="0.35"/>
+                <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#0f172a" stop-opacity="0"/></linearGradient></defs>
+              </svg>
+            </div>
+            <div class="stats">
+              <div class="stat"><div class="muted">BTCUSDT</div><div class="v">$98,420</div></div>
+              <div class="stat"><div class="muted">ETHUSDT</div><div class="v">$5,203</div></div>
+              <div class="stat"><div class="muted">Signal Grade</div><div class="v">A-</div></div>
+              <div class="stat"><div class="muted">24h Pulse</div><div class="v up">+2.4%</div></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h3>Mission Control Health</h3>
+            <div class="health-strip">
+              <div class="health"><div>Market Data</div><div class="s ok">CONNECTED</div></div>
+              <div class="health"><div>Risk</div><div class="s ok">SAFE</div></div>
+              <div class="health"><div>Discord</div><div class="s warn">DEGRADED</div></div>
+              <div class="health"><div>Telegram</div><div class="s ok">OK</div></div>
+            </div>
+            <div class="health-strip">
+              <div class="health"><div>Execution</div><div class="s warn">PAPER</div></div>
+              <div class="health"><div>Queue Depth</div><div class="s">12</div></div>
+              <div class="health"><div>Errors (1h)</div><div class="s bad">2</div></div>
+              <div class="health"><div>Latency</div><div class="s">42ms</div></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="lower">
+          <section class="card">
+            <h3>Agent Grid</h3>
+            <div class="agents">
+              <article class="agent"><strong>SigmaX</strong> <span class="badge running">RUNNING</span><div class="muted">Current: Route signal summary</div></article>
+              <article class="agent"><strong>Hermes</strong> <span class="badge idle">IDLE</span><div class="muted">Current: N/A</div></article>
+              <article class="agent"><strong>Chronos</strong> <span class="badge degraded">DEGRADED</span><div class="muted">Current: Risk check retry</div></article>
+              <article class="agent"><strong>Orion</strong> <span class="badge running">RUNNING</span><div class="muted">Current: Regime detection</div></article>
+              <article class="agent"><strong>Atlas RL</strong> <span class="badge idle">IDLE</span><div class="muted">Current: N/A (experimental)</div></article>
+              <article class="agent"><strong>Vault Orchestrator</strong> <span class="badge running">RUNNING</span><div class="muted">Current: Version lineage snapshot</div></article>
+            </div>
+          </section>
+
+          <section class="card">
+            <h3>Event Timeline</h3>
+            <div class="timeline">
+              <div class="event"><small>09:42:11 • SigmaX • INFO</small><div>Published abstract signal update.</div></div>
+              <div class="event"><small>09:41:48 • Chronos • WARN</small><div>Risk check delayed, retry scheduled.</div></div>
+              <div class="event"><small>09:41:20 • Feed • INFO</small><div>Binance stream heartbeat received.</div></div>
+              <div class="event"><small>09:40:59 • Hermes • INFO</small><div>Execution router in paper mode.</div></div>
+              <div class="event"><small>09:40:22 • Vault • INFO</small><div>Strategy lineage tag updated.</div></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="card settings-bar">
+          <h3>Prompt Settings (Privileged)</h3>
+          <div class="settings-form">
+            <input id="cmd" placeholder="Switch to OpenRouter and set model to anthropic/claude-3.5-sonnet" />
+            <button class="primary" id="proposeBtn">Propose</button>
+            <button class="secondary" id="confirmBtn">Confirm</button>
+          </div>
+          <div class="proposal" id="proposal"></div>
+          <p class="muted">Two-phase commit required. Keys are blocked in this input and must use secure key field.</p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const ticker = [
+        ["BTCUSDT", "98,420", "+1.28%"], ["ETHUSDT", "5,203", "+0.73%"], ["SOLUSDT", "214.17", "-0.42%"],
+        ["BNBUSDT", "702.11", "+0.32%"], ["XRPUSDT", "0.834", "-0.11%"], ["ADAUSDT", "1.102", "+2.04%"]
+      ];
+      const track = document.getElementById("tickerTrack");
+      const doubled = ticker.concat(ticker);
+      track.innerHTML = doubled.map(([s,p,c]) => `<span class="tk">${s} <strong>${p}</strong> <span class="${c.startsWith('+')?'up':'down'}">${c}</span></span>`).join('');
+
+      const cmd = document.getElementById("cmd");
+      const proposal = document.getElementById("proposal");
+      const proposeBtn = document.getElementById("proposeBtn");
+      const confirmBtn = document.getElementById("confirmBtn");
+      let hasProposal = false;
+
+      function parseCommand(text) {
+        const secretPattern = /\b(?:sk|rk|or)-[A-Za-z0-9_-]{10,}\b/;
+        if (secretPattern.test(text)) return { error: "For security, keys must be entered in the secure key field." };
+        const t = text.toLowerCase();
+        if (t.includes("switch to openrouter") && t.includes("model to")) {
+          const model = (t.match(/model to\s+([a-z0-9./:_-]+)/) || [])[1];
+          return { diff: `Change global provider to openrouter and model to ${model}` };
+        }
+        if (t.includes("set global model to")) {
+          const model = (t.match(/set global model to\s+([a-z0-9./:_-]+)/) || [])[1];
+          return { diff: `Change global model to ${model}` };
+        }
+        return { error: "Unsupported command for UI demo. Use approved settings intents only." };
+      }
+
+      proposeBtn.addEventListener("click", () => {
+        const result = parseCommand(cmd.value.trim());
+        proposal.style.display = "block";
+        if (result.error) {
+          hasProposal = false;
+          proposal.innerHTML = `<strong style="color:#fca5a5">Blocked</strong><div class="muted">${result.error}</div>`;
+          return;
+        }
+        hasProposal = true;
+        proposal.innerHTML = `<strong style="color:#86efac">Proposal Ready</strong><div>${result.diff}</div>`;
+      });
+
+      confirmBtn.addEventListener("click", () => {
+        proposal.style.display = "block";
+        if (!hasProposal) {
+          proposal.innerHTML = `<strong style="color:#fcd34d">No proposal</strong><div class="muted">Run Propose first.</div>`;
+          return;
+        }
+        proposal.innerHTML = `<strong style="color:#86efac">Applied</strong><div class="muted">Settings updated (demo only).</div>`;
+        hasProposal = false;
+      });
+    </script>
+  </body>
+</html>
