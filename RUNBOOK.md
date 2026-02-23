@@ -102,3 +102,26 @@ python3 -m http.server 8080
 Then open:
 - `http://localhost:8080` (launcher)
 - `http://localhost:8080/ui/settings_command_bar.html` (settings prompt UI)
+
+
+## 12) React front-end routes (AppShell + page routing)
+
+Run the front-end dev server:
+
+```bash
+npm install
+npm run dev -- --host 0.0.0.0 --port 4173
+```
+
+Open routes:
+- `http://localhost:4173/dashboard`
+- `http://localhost:4173/markets`
+- `http://localhost:4173/mission-control`
+- `http://localhost:4173/alerts`
+- `http://localhost:4173/settings`
+
+Production build:
+
+```bash
+npm run build
+```
