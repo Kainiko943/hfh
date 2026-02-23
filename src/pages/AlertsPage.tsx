@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { ArrowUpDown, Search } from 'lucide-react'
-import { Line, LineChart, ResponsiveContainer } from 'recharts'
+import { CartesianGrid, Line, LineChart, ResponsiveContainer } from 'recharts'
 import { marketStore } from '../state/mockStream'
 
 type Side = 'BUY' | 'SELL'
@@ -80,7 +80,15 @@ const SignalCard = memo(function SignalCard({ signal }: { signal: SignalRow }) {
         <div className="signal-mini-chart" aria-hidden>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={signal.spark}>
-              <Line type="monotone" dataKey="v" stroke={signal.side === 'BUY' ? '#00FF6A' : '#FF3B3B'} strokeWidth={1.4} dot={false} />
+              <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <Line
+                type="monotone"
+                dataKey="v"
+                stroke={signal.side === 'BUY' ? '#00FF6A' : '#FF3B3B'}
+                strokeWidth={1.7}
+                dot={false}
+                style={{ filter: `drop-shadow(0 0 4px ${signal.side === 'BUY' ? 'rgba(0,255,106,.35)' : 'rgba(255,59,59,.35)'})` }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -108,8 +116,15 @@ const ScannerRow = memo(function ScannerRow({
   return (
     <tr>
       <td>{row.symbol}</td>
-      <td><span className={row.side === 'BUY' ? 'up' : 'down'}>{row.side}</span></td>
-      <td className={flash.confidence ? 'flash' : ''}>{row.confidence}%</td>
+      <td><span className={`scanner-side-badge ${row.side === 'BUY' ? 'buy' : 'sell'}`}>{row.side}</span></td>
+      <td className={flash.confidence ? 'flash' : ''}>
+        <div className="scanner-confidence-cell">
+          <span>{row.confidence}%</span>
+          <div className="scanner-confidence-track">
+            <b style={{ width: `${row.confidence}%` }} />
+          </div>
+        </div>
+      </td>
       <td className={flash.entry ? 'flash' : ''}>{row.entry}</td>
       <td>{row.stop}</td>
       <td>{row.target}</td>
