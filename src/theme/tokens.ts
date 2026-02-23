@@ -1,0 +1,20 @@
+export const theme = {
+  colors: {
+    bg: '#05070D',
+    bgElevated: '#0F1626',
+    panel: '#0B111C',
+    panelSolid: '#0B111C',
+    border: 'rgba(255,255,255,0.06)',
+    borderActive: 'rgba(0,163,255,0.22)',
+    text: 'rgba(255,255,255,0.92)',
+    secondary: 'rgba(255,255,255,0.62)',
+    muted: 'rgba(255,255,255,0.42)',
+    success: '#00FF6A',
+    error: '#FF3B3B',
+    warn: '#FFC400',
+    info: '#00A3FF',
+  },
+  radius: { md: 12, lg: 14 },
+  spacing: { sm: 8, md: 12, lg: 16, xl: 24 },
+  motion: { fast: '150ms', normal: '150ms', easing: 'ease-in-out' },
+}
