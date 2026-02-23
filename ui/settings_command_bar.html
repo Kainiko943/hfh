@@ -2,24 +2,88 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Northstar Terminal — Settings Prompt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Northstar Terminal — Prompt Settings</title>
     <style>
-      body { background: #0f1116; color: #e6e8ee; font-family: Inter, Arial, sans-serif; margin: 24px; }
-      .panel { border: 1px solid #2a2f3a; border-radius: 10px; padding: 16px; max-width: 960px; }
-      .row { display: flex; gap: 8px; align-items: center; }
-      input { flex: 1; background: #151924; color: #e6e8ee; border: 1px solid #343a47; border-radius: 8px; padding: 10px; }
-      button { background: #2b6ef3; color: #fff; border: 0; border-radius: 8px; padding: 10px 14px; }
-      .muted { color: #9aa4b2; font-size: 12px; margin-top: 10px; }
+      :root {
+        --bg: #0a0f1a;
+        --panel: #121c31;
+        --border: #2a3a5d;
+        --text: #e5ecff;
+        --muted: #94a7d0;
+        --primary: #4da3ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        background: radial-gradient(circle at top, #1a2c52 0%, var(--bg) 45%);
+        font-family: Inter, Arial, sans-serif;
+      }
+      .wrap { max-width: 1200px; margin: 16px auto; padding: 0 14px; display: grid; gap: 12px; }
+      .top { display: flex; justify-content: space-between; align-items: center; }
+      .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+      .row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+      input, textarea {
+        width: 100%; background: #0f1728; color: var(--text); border: 1px solid var(--border);
+        border-radius: 10px; padding: 10px;
+      }
+      button {
+        border: 0; border-radius: 10px; background: var(--primary); color: white; padding: 10px 14px; font-weight: 600;
+      }
+      .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+      .muted { color: var(--muted); font-size: 12px; }
+      pre {
+        margin: 0; padding: 10px; border: 1px solid var(--border); border-radius: 10px;
+        background: #0f1728; overflow: auto; font-size: 12px;
+      }
+      .actions { display: flex; gap: 8px; margin-top: 8px; }
+      .secondary { background: transparent; border: 1px solid var(--border); }
+      a { color: var(--text); text-decoration: none; border: 1px solid var(--border); border-radius: 9px; padding: 8px 10px; }
     </style>
   </head>
   <body>
-    <div class="panel">
-      <h3>Prompt Settings (Privileged)</h3>
-      <div class="row">
-        <input placeholder="e.g. Switch to OpenRouter and set model to anthropic/claude-3.5-sonnet" />
-        <button>Propose</button>
+    <div class="wrap">
+      <div class="top">
+        <h2 style="margin:0;">Prompt Settings (Privileged)</h2>
+        <a href="../index.html">Back to Dashboard</a>
       </div>
-      <p class="muted">Two-phase commit required: Propose → Confirm. Secret keys are blocked in this field.</p>
+
+      <section class="grid">
+        <div class="panel">
+          <h3 style="margin-top:0;">Command Bar</h3>
+          <div class="row">
+            <input placeholder="Switch to OpenRouter and set model to anthropic/claude-3.5-sonnet" />
+            <button>Propose</button>
+          </div>
+          <p class="muted">Two-phase commit required. Keys are blocked here and must be entered in secure key field only.</p>
+
+          <h4>Parsed Command JSON</h4>
+          <pre>{
+  "intent": "set_global_provider_model",
+  "provider": "openrouter",
+  "model": "anthropic/claude-3.5-sonnet"
+}</pre>
+
+          <h4>Diff Summary</h4>
+          <pre>Change global provider: openrouter
+Change global model: anthropic/claude-3.5-sonnet</pre>
+
+          <div class="actions">
+            <button>Confirm</button>
+            <button class="secondary">Cancel</button>
+          </div>
+        </div>
+
+        <aside class="panel">
+          <h3 style="margin-top:0;">Recent Audit (Admin)</h3>
+          <pre>[05:08:12] PROPOSE by alice: set_global_model
+[05:08:20] CONFIRM by alice: applied
+[05:10:01] PROPOSE by bob: denied (rbac)
+[05:10:11] BLOCKED secret-like text in prompt</pre>
+          <p class="muted">Secrets are always redacted in logs. Secure key endpoint returns only <code>is_set</code>.</p>
+        </aside>
+      </section>
     </div>
   </body>
 </html>
