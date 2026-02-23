@@ -89,3 +89,16 @@ Key behavior:
 - Two-phase commit: propose from text, then confirm with proposal ID.
 - RBAC enforced server-side: only `ADMIN`/`OWNER` can confirm global changes.
 - Command bar blocks key-like strings; secret updates only via secure API method.
+
+
+## 11) Open project in browser (local)
+
+This repo now includes a local launcher page (`index.html`) so you can open the project quickly.
+
+```bash
+python3 -m http.server 8080
+```
+
+Then open:
+- `http://localhost:8080` (launcher)
+- `http://localhost:8080/ui/settings_command_bar.html` (settings prompt UI)

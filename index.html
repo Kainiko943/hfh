@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Northstar Terminal — Project Launcher</title>
+    <style>
+      :root {
+        --bg: #0b0f17;
+        --panel: #111827;
+        --border: #2b3648;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --primary: #3b82f6;
+      }
+      body {
+        margin: 0;
+        font-family: Inter, Arial, sans-serif;
+        background: radial-gradient(circle at top, #111827 0%, var(--bg) 50%);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 900px;
+        margin: 48px auto;
+        padding: 0 20px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+      }
+      h1 { margin: 0 0 10px; font-size: 28px; }
+      p { color: var(--muted); }
+      .links {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-top: 18px;
+      }
+      a {
+        display: block;
+        background: #0f172a;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        text-decoration: none;
+      }
+      a:hover { border-color: var(--primary); }
+      code { color: #93c5fd; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>Northstar Terminal</h1>
+        <p>Project entry page for local development. Use the links below to open available UI surfaces.</p>
+
+        <div class="links">
+          <a href="ui/settings_command_bar.html">
+            <strong>Open Prompt Settings UI</strong><br />
+            <small>Privileged command bar mock for propose → confirm workflow.</small>
+          </a>
+        </div>
+
+        <p style="margin-top: 18px;">
+          To open this project locally, run: <code>python3 -m http.server 8080</code>
+          and visit <code>http://localhost:8080</code>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
