@@ -30,11 +30,11 @@ export function AppShell() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">
+        <div className="brand terminal-brand">
           <div className="brand-mark" />
           <div>
             <strong>Northstar Terminal</strong>
-            <div className="muted" style={{ fontSize: 12 }}>SIGMA Command Center</div>
+            <div className="muted" style={{ fontSize: 11 }}>SIGMA Command Center</div>
           </div>
         </div>
         {commandItems.map(([label, path]) => (
@@ -43,16 +43,14 @@ export function AppShell() {
       </aside>
 
       <main className="main">
-        <header className="command-bar">
+        <header className="command-bar terminal-bar">
           <div>
-            <strong>Global CommandBar</strong>
-            <div className="muted" style={{ fontSize: 12 }}>Cmd/Ctrl+K palette • G then D/M/C/A/S jump</div>
+            <strong>SIGMA Command Center</strong>
           </div>
           <div className="command-right">
             <StatusPill label="Market CONNECTED" tone="success" />
             <StatusPill label="Risk SAFE" tone="success" />
-            <StatusPill label="Execution PAPER" tone="warn" />
-            <input className="input" placeholder="Search symbols, agents, events" />
+            <input className="input" placeholder="Search symbols, agents, events..." />
           </div>
         </header>
         <Outlet />

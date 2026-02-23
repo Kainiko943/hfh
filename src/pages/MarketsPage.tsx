@@ -1,66 +1,101 @@
-import { memo, useMemo, useState, useSyncExternalStore } from 'react'
-import { CardShell } from '../components/CardShell'
-import { DataTable } from '../components/DataTable'
-import { Drawer } from '../components/Drawer'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { marketStore } from '../state/mockStream'
 
 const tabs = ['Watchlist', 'Top Movers', 'Top Volume'] as const
-
-const ScreenerRow = memo(function ScreenerRow({ row, onClick }: { row: any; onClick: () => void }) {
-  return (
-    <tr onClick={onClick} style={{ cursor: 'pointer' }}>
-      <td>{row.symbol}</td><td>{row.price}</td><td style={{ color: row.change24h >= 0 ? '#4ade80' : '#fb7185' }}>{row.change24h}%</td><td>{row.volume}</td><td>{row.regime}</td><td>{row.grade}</td>
-    </tr>
-  )
-})
 
 export function MarketsPage() {
   const symbols = useSyncExternalStore(marketStore.subscribe, marketStore.getSnapshot)
   const [tab, setTab] = useState<(typeof tabs)[number]>('Watchlist')
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(symbols[0]?.symbol ?? 'BTCUSDT')
-  const [drawer, setDrawer] = useState(false)
 
   const filtered = useMemo(() => symbols.filter((s) => s.symbol.toLowerCase().includes(query.toLowerCase())), [symbols, query])
   const selected = symbols.find((s) => s.symbol === active) ?? symbols[0]
 
   return (
-    <div className="page-grid">
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr 360px', gap: 14 }}>
-        <CardShell title="Watchlists + Movers">
-          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>{tabs.map((t) => <button key={t} className="btn" style={{ background: t === tab ? 'rgba(59,130,246,.2)' : undefined }} onClick={() => setTab(t)}>{t}</button>)}</div>
-          <input className="input" placeholder="Search watchlist" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '100%', marginBottom: 8 }} />
-          <div style={{ maxHeight: 420, overflow: 'auto' }}>{filtered.map((s) => <div key={s.symbol} onClick={() => setActive(s.symbol)} style={{ padding: 8, borderRadius: 8, border: '1px solid rgba(148,163,184,.1)', marginBottom: 6, background: s.symbol === active ? 'rgba(59,130,246,.18)' : 'transparent', cursor: 'pointer' }}><strong>{s.symbol}</strong><div className="muted">{s.price} • {s.change24h}%</div></div>)}</div>
-        </CardShell>
-
-        <CardShell title={`Advanced Chart Workstation — ${selected?.symbol ?? ''}`}>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>{['1m','5m','15m','1h','4h','1D'].map((t) => <button key={t} className="btn">{t}</button>)}</div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>{['MA/EMA','VWAP','Volume'].map((i) => <label key={i}><input type="checkbox" defaultChecked /> {i}</label>)}</div>
-          <div style={{ height: 320, borderRadius: 12, border: '1px solid rgba(148,163,184,.12)', background: 'linear-gradient(180deg, rgba(34,211,238,.09), rgba(8,47,73,.03))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Crosshair • Zoom • Range • Compare symbol</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 8, marginTop: 10 }}>{[
-            ['Last', selected?.price], ['24h%', `${selected?.change24h}%`], ['Vol', selected?.volume], ['Funding', '0.01%'], ['Regime', selected?.regime], ['Grade', selected?.grade],
-          ].map(([k,v]) => <div key={String(k)} style={{ border: '1px solid rgba(148,163,184,.12)', borderRadius: 10, padding: 8 }}><div className="muted" style={{ fontSize: 12 }}>{k}</div><strong>{v}</strong></div>)}</div>
-        </CardShell>
-
-        <CardShell title="Microstructure + Tape">
-          <h4 style={{ margin: '0 0 6px' }}>Order Book</h4>
-          <div style={{ maxHeight: 170, overflow: 'auto', marginBottom: 10 }}>{Array.from({ length: 10 }).map((_, i) => <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontSize: 12, marginBottom: 4 }}><span style={{ color: '#4ade80' }}>{(selected?.price ?? 100) - i * 0.2}</span><span style={{ color: '#fb7185', textAlign: 'right' }}>{(selected?.price ?? 100) + i * 0.2}</span></div>)}</div>
-          <h4 style={{ margin: '0 0 6px' }}>Trades Tape</h4>
-          <div style={{ maxHeight: 120, overflow: 'auto', marginBottom: 10 }}>{Array.from({ length: 12 }).map((_, i) => <div key={i} style={{ color: i % 2 ? '#4ade80' : '#fb7185', fontSize: 12 }}>{new Date().toLocaleTimeString()} • {selected?.symbol} • {(selected?.price ?? 100) + (i - 6) * 0.05}</div>)}</div>
-          <h4 style={{ margin: '0 0 6px' }}>Related News</h4>
-          <div className="muted" style={{ fontSize: 13 }}>Macro prints mixed; volatility elevated near session open.</div>
-        </CardShell>
+    <div className="markets-terminal page-grid">
+      <div className="terminal-ticker-row">
+        {symbols.slice(0, 8).map((s) => (
+          <span key={s.symbol}>
+            {s.symbol} <strong>{s.price}</strong> <b className={s.change24h >= 0 ? 'up' : 'down'}>{s.change24h}%</b>
+          </span>
+        ))}
       </div>
 
-      <CardShell title="Screener Table">
-        <DataTable columns={['Symbol', 'Price', '24h%', 'Vol', 'Trend/Regime', 'Signal Grade']} rows={filtered.map((s) => <ScreenerRow key={s.symbol} row={s} onClick={() => { setActive(s.symbol); setDrawer(true) }} />)} />
-      </CardShell>
+      <section className="markets-grid">
+        <article className="terminal-panel watch-panel">
+          <header><h3>Markets</h3><small>SIGMA Command Center</small></header>
+          <div className="tab-row">
+            {tabs.map((t) => (
+              <button key={t} className={`btn compact ${t === tab ? 'active' : ''}`} onClick={() => setTab(t)}>{t}</button>
+            ))}
+          </div>
+          <input className="input" placeholder="Search watchlist" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <div className="watch-list">
+            {filtered.map((s) => (
+              <button key={s.symbol} className={`watch-row ${s.symbol === active ? 'active' : ''}`} onClick={() => setActive(s.symbol)}>
+                <span>{s.symbol}</span>
+                <strong>{s.price}</strong>
+                <em className={s.change24h >= 0 ? 'up' : 'down'}>{s.change24h}%</em>
+              </button>
+            ))}
+          </div>
+        </article>
 
-      <Drawer open={drawer} onClose={() => setDrawer(false)} title={`${active} Symbol Drawer`}>
-        <p className="muted">Details and quick actions for {active}. Real-time pulses update changed rows only.</p>
-        <button className="btn">Open full chart</button>
-        <button className="btn" style={{ marginLeft: 8 }}>Add to alerts</button>
-      </Drawer>
+        <article className="terminal-panel chart-panel">
+          <header>
+            <h3>Advanced Chart Workstation — {selected?.symbol}</h3>
+          </header>
+          <div className="chart-top-controls">
+            {['1m', '5m', '15m', '1h', '4h', '1D'].map((t) => <button key={t} className="btn compact">{t}</button>)}
+            {['MA/EMA', 'VWAP', 'Volume'].map((i) => <label key={i}><input type="checkbox" defaultChecked /> {i}</label>)}
+          </div>
+          <div className="chart-canvas">
+            <div className="chart-gridline" />
+            <div className="candles-mock">{Array.from({ length: 56 }).map((_, i) => <span key={i} className={`mk-candle ${i % 6 === 0 ? 'down' : 'up'}`} />)}</div>
+          </div>
+          <div className="chart-stats-row">
+            {[
+              ['Last', selected?.price], ['Spread', '1.7 / 0.01%'], ['24h%', `${selected?.change24h}%`], ['Volume', selected?.volume], ['Regime', selected?.regime], ['Signal', selected?.grade],
+            ].map(([k, v]) => <div key={String(k)}><small>{k}</small><strong>{v}</strong></div>)}
+          </div>
+
+          <div className="terminal-panel subpanel">
+            <header><h3>Trading Performance</h3></header>
+            <table className="ops-table dense">
+              <thead><tr><th>Symbol</th><th>Side</th><th>Status</th><th>Avg Price</th><th>P/L%</th><th>Close Time</th></tr></thead>
+              <tbody>
+                {filtered.slice(0, 6).map((s, i) => (
+                  <tr key={s.symbol + i}>
+                    <td>{s.symbol}</td><td className="up">Long</td><td>Closed</td><td>{s.price}</td><td className={i % 2 ? 'down' : 'up'}>{i % 2 ? '-1.26%' : '+1.97%'}</td><td>19:47:42</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article className="terminal-panel micro-panel">
+          <header><h3>Order Book</h3></header>
+          <table className="ops-table dense">
+            <thead><tr><th>Symbol</th><th>Bid</th><th>Ask</th><th>Vol</th></tr></thead>
+            <tbody>
+              {filtered.slice(0, 5).map((s, i) => (
+                <tr key={s.symbol}><td>{s.symbol}</td><td className="up">{(s.price - (i * 0.2)).toFixed(2)}</td><td className="down">{(s.price + (i * 0.2)).toFixed(2)}</td><td>{Math.round(s.volume / 1000)}k</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <header><h3>Recent Trades</h3></header>
+          <table className="ops-table dense">
+            <thead><tr><th>Time</th><th>Price</th><th>Qty</th><th>Side</th><th>P/L</th></tr></thead>
+            <tbody>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i}><td>17:{30 + i}</td><td>{selected?.price}</td><td>{400 + i * 30}</td><td>{i % 2 ? 'Buy' : 'Sell'}</td><td className={i % 2 ? 'up' : 'down'}>{i % 2 ? '6.5%' : '-3.6%'}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </article>
+      </section>
     </div>
   )
 }
